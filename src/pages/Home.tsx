@@ -54,7 +54,7 @@ const Home = () => {
           <h1 className="sr-only">M87 Planner - AI-powered cosmic planner</h1>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in mt-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in mt-16">
             <Button 
               variant="cosmic-primary" 
               size="xl"
