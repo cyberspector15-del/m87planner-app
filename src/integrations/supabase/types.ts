@@ -14,7 +14,230 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_logs: {
+        Row: {
+          event_id: string | null
+          id: string
+          logged_at: string
+          notes: string | null
+          outcome: string
+          task_id: string | null
+          user_id: string
+        }
+        Insert: {
+          event_id?: string | null
+          id?: string
+          logged_at?: string
+          notes?: string | null
+          outcome: string
+          task_id?: string | null
+          user_id: string
+        }
+        Update: {
+          event_id?: string | null
+          id?: string
+          logged_at?: string
+          notes?: string | null
+          outcome?: string
+          task_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          location: string | null
+          start_time: string
+          status: string | null
+          task_id: string | null
+          title: string
+          travel_buffer_minutes: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          location?: string | null
+          start_time: string
+          status?: string | null
+          task_id?: string | null
+          title: string
+          travel_buffer_minutes?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          location?: string | null
+          start_time?: string
+          status?: string | null
+          task_id?: string | null
+          title?: string
+          travel_buffer_minutes?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          commute_tolerance_minutes: number | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          timezone: string | null
+          updated_at: string
+          user_id: string
+          work_hours_end: string | null
+          work_hours_start: string | null
+        }
+        Insert: {
+          commute_tolerance_minutes?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+          work_hours_end?: string | null
+          work_hours_start?: string | null
+        }
+        Update: {
+          commute_tolerance_minutes?: number | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+          work_hours_end?: string | null
+          work_hours_start?: string | null
+        }
+        Relationships: []
+      }
+      routines: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          description: string | null
+          frequency: string | null
+          id: string
+          target_duration_minutes: number | null
+          title: string
+          updated_at: string
+          user_id: string
+          window_end: string
+          window_start: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          target_duration_minutes?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+          window_end: string
+          window_start: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          target_duration_minutes?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          window_end?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          deadline: string | null
+          description: string | null
+          duration_minutes: number | null
+          flexible: boolean | null
+          id: string
+          location: string | null
+          priority: number | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          flexible?: boolean | null
+          id?: string
+          location?: string | null
+          priority?: number | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          deadline?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          flexible?: boolean | null
+          id?: string
+          location?: string | null
+          priority?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
