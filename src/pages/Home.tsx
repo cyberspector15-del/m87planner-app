@@ -1,6 +1,7 @@
 import { ArrowRight, Sparkles, Clock, MapPin, Brain, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import heroImage from "@/assets/m87-hero.png";
 
 const features = [
@@ -28,6 +29,31 @@ const features = [
 
 const Home = () => {
   const navigate = useNavigate();
+  const featuresRef = useRef<HTMLElement>(null);
+
+  const scrollToFeatures = () => {
+    featuresRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in');
+        }
+      });
+    }, observerOptions);
+
+    const animatedElements = document.querySelectorAll('.scroll-animate');
+    animatedElements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
@@ -68,6 +94,7 @@ const Home = () => {
               variant="cosmic-outline" 
               size="xl"
               className="min-w-[200px]"
+              onClick={scrollToFeatures}
             >
               Learn More
             </Button>
@@ -83,9 +110,9 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="relative z-10 py-24 px-6">
+      <section ref={featuresRef} id="features" className="relative z-10 py-24 px-6">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-16 scroll-animate opacity-0 translate-y-8 transition-all duration-700 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0">
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mb-4">
               Harness the Power of AI
             </h2>
@@ -98,8 +125,8 @@ const Home = () => {
             {features.map((feature, index) => (
               <div
                 key={feature.title}
-                className="glass rounded-2xl p-6 hover:border-cosmic-silver/30 transition-all duration-300 group animate-fade-in"
-                style={{ animationDelay: `${index * 100}ms` }}
+                className="scroll-animate opacity-0 translate-y-8 transition-all duration-700 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 glass rounded-2xl p-6 hover:border-cosmic-silver/30 hover:scale-[1.02] group"
+                style={{ transitionDelay: `${index * 100}ms` }}
               >
                 <div className="w-12 h-12 rounded-xl bg-cosmic-silver/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-silver/20 transition-colors">
                   <feature.icon className="w-6 h-6 text-cosmic-silver" />
@@ -118,7 +145,7 @@ const Home = () => {
 
       {/* CTA Section */}
       <section className="relative z-10 py-24 px-6">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-4xl mx-auto text-center scroll-animate opacity-0 translate-y-8 transition-all duration-700 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0">
           <div className="glass rounded-3xl p-12 relative overflow-hidden">
             {/* Glow effect */}
             <div 
