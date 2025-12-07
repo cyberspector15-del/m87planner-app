@@ -8,6 +8,7 @@ import TaskList from "@/components/TaskList";
 import AutoPlanButton from "@/components/AutoPlanButton";
 import NLPInput from "@/components/NLPInput";
 import DateSelector from "@/components/DateSelector";
+import EventDialog from "@/components/EventDialog";
 import { useEvents } from "@/hooks/useEvents";
 
 const Index = () => {
@@ -65,19 +66,22 @@ const Index = () => {
                       {eventCount} event{eventCount !== 1 ? "s" : ""} planned
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                      Completed
+                  <div className="flex items-center gap-3">
+                    <EventDialog selectedDate={selectedDate} />
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                        Completed
                     </span>
                     <span className="flex items-center gap-1">
                       <span className="w-2 h-2 rounded-full bg-cosmic-teal" />
                       Current
                     </span>
-                    <span className="flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-muted-foreground" />
-                      Upcoming
-                    </span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-muted-foreground" />
+                        Upcoming
+                      </span>
+                    </div>
                   </div>
                 </div>
                 <Timeline selectedDate={selectedDate} />
