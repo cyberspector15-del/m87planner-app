@@ -1,7 +1,23 @@
-import { CalendarDays, Settings, Bell, Sparkles } from "lucide-react";
+import { CalendarDays, Settings, Bell, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 const Header = () => {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "Signed out",
+      description: "You have been signed out successfully.",
+    });
+  };
+
+  // Get user initial from email
+  const userInitial = user?.email?.charAt(0).toUpperCase() || "U";
+
   return (
     <header className="relative z-10 glass border-b border-border/30">
       <div className="container mx-auto px-6 py-4">
@@ -50,8 +66,16 @@ const Header = () => {
             <Button variant="cosmic-ghost" size="icon">
               <Settings className="w-4 h-4" />
             </Button>
+            <Button 
+              variant="cosmic-ghost" 
+              size="icon"
+              onClick={handleSignOut}
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cosmic-silver/20 to-cosmic-teal/20 border border-cosmic-silver/30 flex items-center justify-center ml-2">
-              <span className="text-sm font-medium text-cosmic-silver">M</span>
+              <span className="text-sm font-medium text-cosmic-silver">{userInitial}</span>
             </div>
           </div>
         </div>
