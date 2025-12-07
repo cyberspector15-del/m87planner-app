@@ -84,7 +84,7 @@ const Home = () => {
             <Button 
               variant="cosmic-primary" 
               size="xl"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/auth")}
               className="gap-2 min-w-[200px]"
             >
               Get Started
@@ -165,7 +165,7 @@ const Home = () => {
               <Button 
                 variant="cosmic-primary" 
                 size="xl"
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate("/auth")}
                 className="gap-2"
               >
                 <Sparkles className="w-5 h-5" />
