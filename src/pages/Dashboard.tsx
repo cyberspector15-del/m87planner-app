@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { format, isToday } from "date-fns";
 import CosmicBackground from "@/components/CosmicBackground";
 import Header from "@/components/Header";
 import Timeline from "@/components/Timeline";
@@ -6,8 +8,17 @@ import TaskList from "@/components/TaskList";
 import AutoPlanButton from "@/components/AutoPlanButton";
 import NLPInput from "@/components/NLPInput";
 import DateSelector from "@/components/DateSelector";
+import { useEvents } from "@/hooks/useEvents";
 
 const Index = () => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { data: events } = useEvents(selectedDate);
+
+  const eventCount = events?.length ?? 0;
+  const dateLabel = isToday(selectedDate) 
+    ? "Today's Schedule" 
+    : format(selectedDate, "EEEE, MMM d");
+
   return (
     <div className="min-h-screen relative">
       <CosmicBackground />
@@ -37,7 +48,10 @@ const Index = () => {
             <div className="lg:col-span-2 space-y-6">
               {/* Date Selector */}
               <div className="glass rounded-xl p-4 animate-fade-in" style={{ animationDelay: "200ms" }}>
-                <DateSelector />
+                <DateSelector 
+                  selectedDate={selectedDate} 
+                  onDateChange={setSelectedDate} 
+                />
               </div>
 
               {/* Timeline */}
@@ -45,10 +59,10 @@ const Index = () => {
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="font-display font-semibold text-foreground">
-                      Today's Schedule
+                      {dateLabel}
                     </h2>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      6 events planned
+                      {eventCount} event{eventCount !== 1 ? "s" : ""} planned
                     </p>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -66,7 +80,7 @@ const Index = () => {
                     </span>
                   </div>
                 </div>
-                <Timeline />
+                <Timeline selectedDate={selectedDate} />
               </div>
             </div>
 
