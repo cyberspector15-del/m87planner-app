@@ -122,6 +122,16 @@
     box-shadow: var(--shadow-teal-glow);
   }
 
+  /* Green neon glow for completed events */
+  .glow-complete {
+    box-shadow: 0 0 20px hsl(145 60% 45% / 0.5), 0 0 40px hsl(145 60% 45% / 0.3), inset 0 0 20px hsl(145 60% 45% / 0.1);
+    border-color: hsl(145 60% 45% / 0.6) !important;
+  }
+
+  .glow-complete-subtle {
+    box-shadow: 0 0 15px hsl(145 60% 45% / 0.4), 0 0 30px hsl(145 60% 45% / 0.2);
+  }
+
   /* Cosmic button styles */
   .btn-cosmic {
     @apply relative overflow-hidden transition-all duration-300;
