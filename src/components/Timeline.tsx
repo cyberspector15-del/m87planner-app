@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEvents, useDeleteEvent, useUpdateEvent, Event } from "@/hooks/useEvents";
 import { format, isToday, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import EventDialog from "@/components/EventDialog";
 import {
   AlertDialog,
@@ -111,40 +110,31 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                 key={event.id}
                 className={cn(
                   "relative animate-fade-in group",
-                  { "opacity-60": status === "completed" }
                 )}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                {/* Timeline dot - clickable for completion */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => handleToggleComplete(event)}
-                      className={cn(
-                        "absolute -left-10 top-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer hover:scale-110",
-                        status === "completed" && "bg-cosmic-silver/20 hover:bg-cosmic-silver/30",
-                        status === "current" && "bg-cosmic-teal/20 glow-teal hover:bg-cosmic-teal/30",
-                        status === "upcoming" && "bg-muted hover:bg-muted/80"
-                      )}
-                    >
-                      {status === "completed" ? (
-                        <CheckCircle2 className="w-4 h-4 text-cosmic-silver" />
-                      ) : status === "current" ? (
-                        <div className="relative">
-                          <Circle className="w-4 h-4 text-cosmic-teal fill-cosmic-teal" />
-                          <div className="absolute inset-0 animate-ping">
-                            <Circle className="w-4 h-4 text-cosmic-teal" />
-                          </div>
-                        </div>
-                      ) : (
-                        <Circle className="w-4 h-4 text-muted-foreground" />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="left">
-                    <p>{status === "completed" ? "Mark as incomplete" : "Mark as complete"}</p>
-                  </TooltipContent>
-                </Tooltip>
+                {/* Timeline dot */}
+                <div
+                  className={cn(
+                    "absolute -left-10 top-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                    status === "completed" && "bg-emerald-500/20 glow-complete-subtle",
+                    status === "current" && "bg-cosmic-teal/20 glow-teal",
+                    status === "upcoming" && "bg-muted"
+                  )}
+                >
+                  {status === "completed" ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  ) : status === "current" ? (
+                    <div className="relative">
+                      <Circle className="w-4 h-4 text-cosmic-teal fill-cosmic-teal" />
+                      <div className="absolute inset-0 animate-ping">
+                        <Circle className="w-4 h-4 text-cosmic-teal" />
+                      </div>
+                    </div>
+                  ) : (
+                    <Circle className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
 
                 {/* Travel buffer indicator */}
                 {event.travel_buffer_minutes && event.travel_buffer_minutes > 0 && status !== "completed" && (
@@ -154,11 +144,14 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                   </div>
                 )}
 
-                {/* Event card */}
+                {/* Event card - clickable to toggle completion */}
                 <div
+                  onClick={() => handleToggleComplete(event)}
                   className={cn(
-                    "glass rounded-xl p-4 transition-all duration-300 hover:border-cosmic-silver/30",
-                    status === "current" && "border-cosmic-teal/30 glow-teal"
+                    "glass rounded-xl p-4 transition-all duration-300 cursor-pointer",
+                    status === "completed" && "glow-complete border-emerald-500/50",
+                    status === "current" && "border-cosmic-teal/30 glow-teal hover:border-cosmic-silver/30",
+                    status === "upcoming" && "hover:border-cosmic-silver/30"
                   )}
                 >
                   <div className="flex items-start justify-between gap-4">
@@ -167,12 +160,13 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                         <span
                           className={cn(
                             "text-xs font-medium px-2 py-0.5 rounded-full border",
-                            priority === "high" && "priority-high",
-                            priority === "medium" && "priority-medium",
-                            priority === "low" && "priority-low"
+                            status === "completed" && "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+                            status !== "completed" && priority === "high" && "priority-high",
+                            status !== "completed" && priority === "medium" && "priority-medium",
+                            status !== "completed" && priority === "low" && "priority-low"
                           )}
                         >
-                          {priority}
+                          {status === "completed" ? "completed" : priority}
                         </span>
                         {status === "current" && (
                           <span className="text-xs text-cosmic-teal font-medium animate-pulse">
@@ -182,10 +176,13 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                       </div>
                       <h3
                         className={cn(
-                          "font-medium text-foreground truncate",
-                          status === "current" && "text-glow-teal"
+                          "font-medium truncate transition-colors duration-300",
+                          status === "completed" && "text-emerald-400",
+                          status === "current" && "text-foreground text-glow-teal",
+                          status === "upcoming" && "text-foreground"
                         )}
                       >
+                        {status === "completed" && <CheckCircle2 className="w-4 h-4 inline-block mr-2" />}
                         {event.title}
                       </h3>
                       {event.location && (
@@ -217,7 +214,7 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                          onClick={() => setEditingEvent(event)}
+                          onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
@@ -225,7 +222,7 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => setDeletingEvent(event)}
+                          onClick={(e) => { e.stopPropagation(); setDeletingEvent(event); }}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
