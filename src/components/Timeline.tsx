@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEvents, useDeleteEvent, Event } from "@/hooks/useEvents";
+import { useEvents, useDeleteEvent, useUpdateEvent, Event } from "@/hooks/useEvents";
 import { format, isToday, parseISO } from "date-fns";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import EventDialog from "@/components/EventDialog";
 import {
   AlertDialog,
@@ -46,6 +47,7 @@ const getEventPriority = (event: Event): Priority => {
 const Timeline = ({ selectedDate }: TimelineProps) => {
   const { data: events, isLoading, error } = useEvents(selectedDate);
   const deleteEvent = useDeleteEvent();
+  const updateEvent = useUpdateEvent();
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
   const [deletingEvent, setDeletingEvent] = useState<Event | null>(null);
 
@@ -54,6 +56,11 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
       await deleteEvent.mutateAsync(deletingEvent.id);
       setDeletingEvent(null);
     }
+  };
+
+  const handleToggleComplete = async (event: Event) => {
+    const newStatus = event.status === "completed" ? "scheduled" : "completed";
+    await updateEvent.mutateAsync({ id: event.id, status: newStatus });
   };
 
   if (isLoading) {
@@ -108,28 +115,36 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                 )}
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                {/* Timeline dot */}
-                <div
-                  className={cn(
-                    "absolute -left-10 top-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
-                    status === "completed" && "bg-cosmic-silver/20",
-                    status === "current" && "bg-cosmic-teal/20 glow-teal",
-                    status === "upcoming" && "bg-muted"
-                  )}
-                >
-                  {status === "completed" ? (
-                    <CheckCircle2 className="w-4 h-4 text-cosmic-silver" />
-                  ) : status === "current" ? (
-                    <div className="relative">
-                      <Circle className="w-4 h-4 text-cosmic-teal fill-cosmic-teal" />
-                      <div className="absolute inset-0 animate-ping">
-                        <Circle className="w-4 h-4 text-cosmic-teal" />
-                      </div>
-                    </div>
-                  ) : (
-                    <Circle className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </div>
+                {/* Timeline dot - clickable for completion */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => handleToggleComplete(event)}
+                      className={cn(
+                        "absolute -left-10 top-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer hover:scale-110",
+                        status === "completed" && "bg-cosmic-silver/20 hover:bg-cosmic-silver/30",
+                        status === "current" && "bg-cosmic-teal/20 glow-teal hover:bg-cosmic-teal/30",
+                        status === "upcoming" && "bg-muted hover:bg-muted/80"
+                      )}
+                    >
+                      {status === "completed" ? (
+                        <CheckCircle2 className="w-4 h-4 text-cosmic-silver" />
+                      ) : status === "current" ? (
+                        <div className="relative">
+                          <Circle className="w-4 h-4 text-cosmic-teal fill-cosmic-teal" />
+                          <div className="absolute inset-0 animate-ping">
+                            <Circle className="w-4 h-4 text-cosmic-teal" />
+                          </div>
+                        </div>
+                      ) : (
+                        <Circle className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>{status === "completed" ? "Mark as incomplete" : "Mark as complete"}</p>
+                  </TooltipContent>
+                </Tooltip>
 
                 {/* Travel buffer indicator */}
                 {event.travel_buffer_minutes && event.travel_buffer_minutes > 0 && status !== "completed" && (
