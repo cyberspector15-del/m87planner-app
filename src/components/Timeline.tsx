@@ -1,7 +1,20 @@
-import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2, Pencil, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEvents, Event } from "@/hooks/useEvents";
+import { useEvents, useDeleteEvent, Event } from "@/hooks/useEvents";
 import { format, isToday, parseISO } from "date-fns";
+import { Button } from "@/components/ui/button";
+import EventDialog from "@/components/EventDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TimelineProps {
   selectedDate?: Date;
@@ -25,8 +38,6 @@ const getEventStatus = (event: Event): Status => {
 };
 
 const getEventPriority = (event: Event): Priority => {
-  // Map status to priority for display purposes
-  // In real implementation, you might have a priority field on events
   if (event.status === "scheduled") return "high";
   if (event.status === "tentative") return "medium";
   return "low";
@@ -34,6 +45,16 @@ const getEventPriority = (event: Event): Priority => {
 
 const Timeline = ({ selectedDate }: TimelineProps) => {
   const { data: events, isLoading, error } = useEvents(selectedDate);
+  const deleteEvent = useDeleteEvent();
+  const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [deletingEvent, setDeletingEvent] = useState<Event | null>(null);
+
+  const handleDelete = async () => {
+    if (deletingEvent) {
+      await deleteEvent.mutateAsync(deletingEvent.id);
+      setDeletingEvent(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -66,120 +87,172 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
   }
 
   return (
-    <div className="relative">
-      {/* Timeline line */}
-      <div className="timeline-line" />
+    <>
+      <div className="relative">
+        {/* Timeline line */}
+        <div className="timeline-line" />
 
-      <div className="space-y-4 pl-10">
-        {events.map((event, index) => {
-          const status = getEventStatus(event);
-          const priority = getEventPriority(event);
-          const startTime = parseISO(event.start_time);
-          const endTime = parseISO(event.end_time);
+        <div className="space-y-4 pl-10">
+          {events.map((event, index) => {
+            const status = getEventStatus(event);
+            const priority = getEventPriority(event);
+            const startTime = parseISO(event.start_time);
+            const endTime = parseISO(event.end_time);
 
-          return (
-            <div
-              key={event.id}
-              className={cn(
-                "relative animate-fade-in",
-                { "opacity-60": status === "completed" }
-              )}
-              style={{ animationDelay: `${index * 100}ms` }}
-            >
-              {/* Timeline dot */}
+            return (
               <div
+                key={event.id}
                 className={cn(
-                  "absolute -left-10 top-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
-                  status === "completed" && "bg-cosmic-silver/20",
-                  status === "current" && "bg-cosmic-teal/20 glow-teal",
-                  status === "upcoming" && "bg-muted"
+                  "relative animate-fade-in group",
+                  { "opacity-60": status === "completed" }
                 )}
+                style={{ animationDelay: `${index * 100}ms` }}
               >
-                {status === "completed" ? (
-                  <CheckCircle2 className="w-4 h-4 text-cosmic-silver" />
-                ) : status === "current" ? (
-                  <div className="relative">
-                    <Circle className="w-4 h-4 text-cosmic-teal fill-cosmic-teal" />
-                    <div className="absolute inset-0 animate-ping">
-                      <Circle className="w-4 h-4 text-cosmic-teal" />
+                {/* Timeline dot */}
+                <div
+                  className={cn(
+                    "absolute -left-10 top-4 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300",
+                    status === "completed" && "bg-cosmic-silver/20",
+                    status === "current" && "bg-cosmic-teal/20 glow-teal",
+                    status === "upcoming" && "bg-muted"
+                  )}
+                >
+                  {status === "completed" ? (
+                    <CheckCircle2 className="w-4 h-4 text-cosmic-silver" />
+                  ) : status === "current" ? (
+                    <div className="relative">
+                      <Circle className="w-4 h-4 text-cosmic-teal fill-cosmic-teal" />
+                      <div className="absolute inset-0 animate-ping">
+                        <Circle className="w-4 h-4 text-cosmic-teal" />
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <Circle className="w-4 h-4 text-muted-foreground" />
-                )}
-              </div>
-
-              {/* Travel buffer indicator */}
-              {event.travel_buffer_minutes && event.travel_buffer_minutes > 0 && status !== "completed" && (
-                <div className="absolute -left-10 -top-2 flex items-center gap-1 text-[10px] text-cosmic-teal">
-                  <MapPin className="w-3 h-3" />
-                  <span>{event.travel_buffer_minutes}min</span>
+                  ) : (
+                    <Circle className="w-4 h-4 text-muted-foreground" />
+                  )}
                 </div>
-              )}
 
-              {/* Event card */}
-              <div
-                className={cn(
-                  "glass rounded-xl p-4 transition-all duration-300 hover:border-cosmic-silver/30",
-                  status === "current" && "border-cosmic-teal/30 glow-teal"
+                {/* Travel buffer indicator */}
+                {event.travel_buffer_minutes && event.travel_buffer_minutes > 0 && status !== "completed" && (
+                  <div className="absolute -left-10 -top-2 flex items-center gap-1 text-[10px] text-cosmic-teal">
+                    <MapPin className="w-3 h-3" />
+                    <span>{event.travel_buffer_minutes}min</span>
+                  </div>
                 )}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span
+
+                {/* Event card */}
+                <div
+                  className={cn(
+                    "glass rounded-xl p-4 transition-all duration-300 hover:border-cosmic-silver/30",
+                    status === "current" && "border-cosmic-teal/30 glow-teal"
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span
+                          className={cn(
+                            "text-xs font-medium px-2 py-0.5 rounded-full border",
+                            priority === "high" && "priority-high",
+                            priority === "medium" && "priority-medium",
+                            priority === "low" && "priority-low"
+                          )}
+                        >
+                          {priority}
+                        </span>
+                        {status === "current" && (
+                          <span className="text-xs text-cosmic-teal font-medium animate-pulse">
+                            NOW
+                          </span>
+                        )}
+                      </div>
+                      <h3
                         className={cn(
-                          "text-xs font-medium px-2 py-0.5 rounded-full border",
-                          priority === "high" && "priority-high",
-                          priority === "medium" && "priority-medium",
-                          priority === "low" && "priority-low"
+                          "font-medium text-foreground truncate",
+                          status === "current" && "text-glow-teal"
                         )}
                       >
-                        {priority}
-                      </span>
-                      {status === "current" && (
-                        <span className="text-xs text-cosmic-teal font-medium animate-pulse">
-                          NOW
-                        </span>
+                        {event.title}
+                      </h3>
+                      {event.location && (
+                        <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          <span>{event.location}</span>
+                        </div>
+                      )}
+                      {event.description && (
+                        <p className="text-sm text-muted-foreground/70 mt-1 line-clamp-2">
+                          {event.description}
+                        </p>
                       )}
                     </div>
-                    <h3
-                      className={cn(
-                        "font-medium text-foreground truncate",
-                        status === "current" && "text-glow-teal"
-                      )}
-                    >
-                      {event.title}
-                    </h3>
-                    {event.location && (
-                      <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-                        <MapPin className="w-3 h-3" />
-                        <span>{event.location}</span>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <div className="text-right">
+                        <div className="flex items-center gap-1 text-sm text-cosmic-silver font-medium">
+                          <Clock className="w-3 h-3" />
+                          <span>{format(startTime, "HH:mm")}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <ArrowRight className="w-3 h-3" />
+                          <span>{format(endTime, "HH:mm")}</span>
+                        </div>
                       </div>
-                    )}
-                    {event.description && (
-                      <p className="text-sm text-muted-foreground/70 mt-1 line-clamp-2">
-                        {event.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="flex items-center gap-1 text-sm text-cosmic-silver font-medium">
-                      <Clock className="w-3 h-3" />
-                      <span>{format(startTime, "HH:mm")}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <ArrowRight className="w-3 h-3" />
-                      <span>{format(endTime, "HH:mm")}</span>
+                      {/* Edit/Delete buttons */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => setEditingEvent(event)}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => setDeletingEvent(event)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* Edit Dialog */}
+      <EventDialog
+        event={editingEvent || undefined}
+        open={!!editingEvent}
+        onOpenChange={(open) => !open && setEditingEvent(null)}
+        trigger={null}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingEvent} onOpenChange={(open) => !open && setDeletingEvent(null)}>
+        <AlertDialogContent className="glass-strong border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Event</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingEvent?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteEvent.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

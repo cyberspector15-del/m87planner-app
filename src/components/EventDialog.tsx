@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { format } from "date-fns";
-import { CalendarIcon, Clock, MapPin, Plus } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { CalendarIcon, Clock, MapPin, Plus, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useCreateEvent } from "@/hooks/useEvents";
+import { useCreateEvent, useUpdateEvent, Event } from "@/hooks/useEvents";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Title is required").max(100),
@@ -45,15 +45,38 @@ type EventFormValues = z.infer<typeof eventSchema>;
 
 interface EventDialogProps {
   selectedDate?: Date;
+  event?: Event;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  trigger?: React.ReactNode;
 }
 
-const EventDialog = ({ selectedDate }: EventDialogProps) => {
-  const [open, setOpen] = useState(false);
+const EventDialog = ({ selectedDate, event, open: controlledOpen, onOpenChange, trigger }: EventDialogProps) => {
+  const [internalOpen, setInternalOpen] = useState(false);
   const createEvent = useCreateEvent();
+  const updateEvent = useUpdateEvent();
 
-  const form = useForm<EventFormValues>({
-    resolver: zodResolver(eventSchema),
-    defaultValues: {
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? onOpenChange! : setInternalOpen;
+
+  const isEditing = !!event;
+
+  const getDefaultValues = (): EventFormValues => {
+    if (event) {
+      const startDate = parseISO(event.start_time);
+      const endDate = parseISO(event.end_time);
+      return {
+        title: event.title,
+        description: event.description || "",
+        date: startDate,
+        startTime: format(startDate, "HH:mm"),
+        endTime: format(endDate, "HH:mm"),
+        location: event.location || "",
+        travelBuffer: event.travel_buffer_minutes || 0,
+      };
+    }
+    return {
       title: "",
       description: "",
       date: selectedDate || new Date(),
@@ -61,8 +84,20 @@ const EventDialog = ({ selectedDate }: EventDialogProps) => {
       endTime: "10:00",
       location: "",
       travelBuffer: 0,
-    },
+    };
+  };
+
+  const form = useForm<EventFormValues>({
+    resolver: zodResolver(eventSchema),
+    defaultValues: getDefaultValues(),
   });
+
+  // Reset form when event changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      form.reset(getDefaultValues());
+    }
+  }, [open, event]);
 
   const onSubmit = async (values: EventFormValues) => {
     // Combine date with times
@@ -74,7 +109,7 @@ const EventDialog = ({ selectedDate }: EventDialogProps) => {
     const [endHours, endMinutes] = values.endTime.split(":").map(Number);
     endDateTime.setHours(endHours, endMinutes, 0, 0);
 
-    await createEvent.mutateAsync({
+    const eventData = {
       title: values.title,
       description: values.description || null,
       start_time: startDateTime.toISOString(),
@@ -83,32 +118,38 @@ const EventDialog = ({ selectedDate }: EventDialogProps) => {
       travel_buffer_minutes: values.travelBuffer || null,
       status: "scheduled",
       task_id: null,
-    });
+    };
+
+    if (isEditing) {
+      await updateEvent.mutateAsync({ id: event.id, ...eventData });
+    } else {
+      await createEvent.mutateAsync(eventData);
+    }
 
     setOpen(false);
-    form.reset({
-      title: "",
-      description: "",
-      date: selectedDate || new Date(),
-      startTime: "09:00",
-      endTime: "10:00",
-      location: "",
-      travelBuffer: 0,
-    });
+    form.reset(getDefaultValues());
   };
+
+  const isPending = createEvent.isPending || updateEvent.isPending;
+
+  const defaultTrigger = (
+    <Button variant="cosmic-outline" size="sm" className="gap-2">
+      <Plus className="w-4 h-4" />
+      Add Event
+    </Button>
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="cosmic-outline" size="sm" className="gap-2">
-          <Plus className="w-4 h-4" />
-          Add Event
-        </Button>
-      </DialogTrigger>
+      {trigger !== undefined ? (
+        trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : (
+        <DialogTrigger asChild>{defaultTrigger}</DialogTrigger>
+      )}
       <DialogContent className="glass-strong border-border/50 sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="font-display text-foreground">
-            Schedule New Event
+            {isEditing ? "Edit Event" : "Schedule New Event"}
           </DialogTitle>
         </DialogHeader>
 
@@ -292,9 +333,9 @@ const EventDialog = ({ selectedDate }: EventDialogProps) => {
               <Button
                 type="submit"
                 variant="cosmic-primary"
-                disabled={createEvent.isPending}
+                disabled={isPending}
               >
-                {createEvent.isPending ? "Creating..." : "Create Event"}
+                {isPending ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save Changes" : "Create Event")}
               </Button>
             </div>
           </form>
