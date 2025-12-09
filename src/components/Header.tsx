@@ -1,11 +1,21 @@
+import { useState } from "react";
 import { CalendarDays, Settings, Bell, Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import RoutineList from "@/components/RoutineList";
 
 const Header = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const [routinesOpen, setRoutinesOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -49,9 +59,23 @@ const Header = () => {
             <Button variant="cosmic-ghost" size="sm">
               Tasks
             </Button>
-            <Button variant="cosmic-ghost" size="sm">
-              Routines
-            </Button>
+            <Sheet open={routinesOpen} onOpenChange={setRoutinesOpen}>
+              <SheetTrigger asChild>
+                <Button variant="cosmic-ghost" size="sm">
+                  Routines
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-[400px] sm:w-[540px] glass border-l border-border/30 bg-background/95">
+                <SheetHeader>
+                  <SheetTitle className="font-display text-xl text-cosmic-gradient">
+                    Routine Management
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <RoutineList />
+                </div>
+              </SheetContent>
+            </Sheet>
             <Button variant="cosmic-ghost" size="sm">
               Analytics
             </Button>
