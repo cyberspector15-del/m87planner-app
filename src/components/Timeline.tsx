@@ -24,13 +24,15 @@ type Priority = "high" | "medium" | "low";
 type Status = "completed" | "current" | "upcoming";
 
 const getEventStatus = (event: Event): Status => {
+  // Only mark as completed if user explicitly set it
+  if (event.status === "completed") {
+    return "completed";
+  }
+  
   const now = new Date();
   const startTime = parseISO(event.start_time);
   const endTime = parseISO(event.end_time);
 
-  if (event.status === "completed" || now > endTime) {
-    return "completed";
-  }
   if (now >= startTime && now <= endTime) {
     return "current";
   }
