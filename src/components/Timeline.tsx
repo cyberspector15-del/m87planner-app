@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2, Pencil, Trash2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEvents, useDeleteEvent, useUpdateEvent, Event } from "@/hooks/useEvents";
 import { format, isToday, parseISO } from "date-fns";
@@ -144,11 +144,10 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                   </div>
                 )}
 
-                {/* Event card - clickable to toggle completion */}
+                {/* Event card */}
                 <div
-                  onClick={() => handleToggleComplete(event)}
                   className={cn(
-                    "glass rounded-xl p-4 transition-all duration-300 cursor-pointer",
+                    "glass rounded-xl p-4 transition-all duration-300",
                     status === "completed" && "glow-complete border-emerald-500/50",
                     status === "current" && "border-cosmic-teal/30 glow-teal hover:border-cosmic-silver/30",
                     status === "upcoming" && "hover:border-cosmic-silver/30"
@@ -208,21 +207,36 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                           <span>{format(endTime, "HH:mm")}</span>
                         </div>
                       </div>
-                      {/* Edit/Delete buttons */}
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1">
+                        {/* Complete button */}
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                          onClick={(e) => { e.stopPropagation(); setEditingEvent(event); }}
+                          className={cn(
+                            "h-7 w-7 transition-all duration-300",
+                            status === "completed" 
+                              ? "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30" 
+                              : "text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10"
+                          )}
+                          onClick={() => handleToggleComplete(event)}
+                          title={status === "completed" ? "Mark incomplete" : "Mark complete"}
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setEditingEvent(event)}
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={(e) => { e.stopPropagation(); setDeletingEvent(event); }}
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setDeletingEvent(event)}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
