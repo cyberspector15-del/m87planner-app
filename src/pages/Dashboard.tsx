@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import Timeline from "@/components/Timeline";
 import QuickStats from "@/components/QuickStats";
 import TaskList from "@/components/TaskList";
+import RoutineList from "@/components/RoutineList";
 import AutoPlanButton from "@/components/AutoPlanButton";
 import NLPInput from "@/components/NLPInput";
 import DateSelector from "@/components/DateSelector";
@@ -103,6 +104,11 @@ const Index = () => {
               {/* Task List */}
               <div className="animate-fade-in" style={{ animationDelay: "600ms" }}>
                 <TaskList />
+              </div>
+
+              {/* Routine List */}
+              <div className="animate-fade-in" style={{ animationDelay: "700ms" }}>
+                <RoutineList />
               </div>
             </div>
           </div>
