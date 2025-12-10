@@ -12,12 +12,14 @@ import {
 } from "@/components/ui/sheet";
 import RoutineList from "@/components/RoutineList";
 import TaskList from "@/components/TaskList";
+import AnalyticsPanel from "@/components/AnalyticsPanel";
 
 const Header = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [routinesOpen, setRoutinesOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -92,9 +94,23 @@ const Header = () => {
                 </div>
               </SheetContent>
             </Sheet>
-            <Button variant="cosmic-ghost" size="sm">
-              Analytics
-            </Button>
+            <Sheet open={analyticsOpen} onOpenChange={setAnalyticsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="cosmic-ghost" size="sm">
+                  Analytics
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-[400px] sm:w-[540px] glass border-l border-border/30 bg-background/95">
+                <SheetHeader>
+                  <SheetTitle className="font-display text-xl text-cosmic-gradient">
+                    Analytics
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <AnalyticsPanel />
+                </div>
+              </SheetContent>
+            </Sheet>
           </nav>
 
           {/* Actions */}
