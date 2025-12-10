@@ -11,11 +11,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import RoutineList from "@/components/RoutineList";
+import TaskList from "@/components/TaskList";
 
 const Header = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [routinesOpen, setRoutinesOpen] = useState(false);
+  const [tasksOpen, setTasksOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -56,9 +58,23 @@ const Header = () => {
               <CalendarDays className="w-4 h-4" />
               Dashboard
             </Button>
-            <Button variant="cosmic-ghost" size="sm">
-              Tasks
-            </Button>
+            <Sheet open={tasksOpen} onOpenChange={setTasksOpen}>
+              <SheetTrigger asChild>
+                <Button variant="cosmic-ghost" size="sm">
+                  Tasks
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-[400px] sm:w-[540px] glass border-l border-border/30 bg-background/95">
+                <SheetHeader>
+                  <SheetTitle className="font-display text-xl text-cosmic-gradient">
+                    Task Management
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <TaskList />
+                </div>
+              </SheetContent>
+            </Sheet>
             <Sheet open={routinesOpen} onOpenChange={setRoutinesOpen}>
               <SheetTrigger asChild>
                 <Button variant="cosmic-ghost" size="sm">
