@@ -97,7 +97,7 @@ const Index = () => {
 
               {/* Auto Plan Button */}
               <div className="animate-fade-in" style={{ animationDelay: "500ms" }}>
-                <AutoPlanButton />
+                <AutoPlanButton selectedDate={selectedDate} />
               </div>
 
               {/* Task List */}
