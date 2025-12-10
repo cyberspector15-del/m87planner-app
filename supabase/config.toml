@@ -2,3 +2,6 @@ project_id = "vnswgclaadalyvhoapjq"
 
 [functions.auto-plan]
 verify_jwt = false
+
+[functions.nlp-parse]
+verify_jwt = false
