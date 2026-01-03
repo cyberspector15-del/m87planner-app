@@ -119,6 +119,8 @@ export type Database = {
           email: string | null
           id: string
           name: string | null
+          notifications_enabled: boolean | null
+          reminder_minutes: number | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -131,6 +133,8 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          notifications_enabled?: boolean | null
+          reminder_minutes?: number | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -143,11 +147,40 @@ export type Database = {
           email?: string | null
           id?: string
           name?: string | null
+          notifications_enabled?: boolean | null
+          reminder_minutes?: number | null
           timezone?: string | null
           updated_at?: string
           user_id?: string
           work_hours_end?: string | null
           work_hours_start?: string | null
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          user_id?: string
         }
         Relationships: []
       }

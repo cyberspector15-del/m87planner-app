@@ -13,6 +13,7 @@ import {
 import RoutineList from "@/components/RoutineList";
 import TaskList from "@/components/TaskList";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
+import { NotificationSettings } from "@/components/NotificationSettings";
 
 const Header = () => {
   const { user, signOut } = useAuth();
@@ -20,6 +21,7 @@ const Header = () => {
   const [routinesOpen, setRoutinesOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -115,10 +117,24 @@ const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <Button variant="cosmic-ghost" size="icon" className="relative">
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-cosmic-teal rounded-full" />
-            </Button>
+            <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="cosmic-ghost" size="icon" className="relative">
+                  <Bell className="w-4 h-4" />
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-cosmic-teal rounded-full" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent className="w-[400px] sm:w-[450px] glass border-l border-border/30 bg-background/95">
+                <SheetHeader>
+                  <SheetTitle className="font-display text-xl text-cosmic-gradient">
+                    Notification Settings
+                  </SheetTitle>
+                </SheetHeader>
+                <div className="mt-6">
+                  <NotificationSettings />
+                </div>
+              </SheetContent>
+            </Sheet>
             <Button variant="cosmic-ghost" size="icon">
               <Settings className="w-4 h-4" />
             </Button>

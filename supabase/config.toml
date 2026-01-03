@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.nlp-parse]
 verify_jwt = false
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.schedule-reminders]
+verify_jwt = false
