@@ -9,6 +9,7 @@ import AutoPlanButton from "@/components/AutoPlanButton";
 import NLPInput from "@/components/NLPInput";
 import DateSelector from "@/components/DateSelector";
 import EventDialog from "@/components/EventDialog";
+import WeeklyProgressChart from "@/components/WeeklyProgressChart";
 import { useEvents } from "@/hooks/useEvents";
 
 const Index = () => {
@@ -38,9 +39,14 @@ const Index = () => {
             </p>
           </div>
 
-          {/* Quick Stats */}
-          <div className="mb-8">
-            <QuickStats />
+          {/* Quick Stats & Weekly Chart */}
+          <div className="mb-8 grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <QuickStats />
+            </div>
+            <div className="animate-fade-in" style={{ animationDelay: "150ms" }}>
+              <WeeklyProgressChart />
+            </div>
           </div>
 
           {/* Main Grid */}
