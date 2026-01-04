@@ -1,44 +1,58 @@
 import { CheckCircle2, Clock, Target, Zap } from "lucide-react";
-
-const stats = [
-  {
-    icon: CheckCircle2,
-    label: "Completed",
-    value: "12",
-    subtext: "tasks today",
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-500/10",
-  },
-  {
-    icon: Clock,
-    label: "Focus Time",
-    value: "4.5h",
-    subtext: "deep work",
-    color: "text-cosmic-silver",
-    bgColor: "bg-cosmic-silver/10",
-  },
-  {
-    icon: Target,
-    label: "Streak",
-    value: "7",
-    subtext: "days",
-    color: "text-amber-400",
-    bgColor: "bg-amber-500/10",
-  },
-  {
-    icon: Zap,
-    label: "Efficiency",
-    value: "94%",
-    subtext: "this week",
-    color: "text-cosmic-teal",
-    bgColor: "bg-cosmic-teal/10",
-  },
-];
+import { useQuickStats } from "@/hooks/useQuickStats";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const QuickStats = () => {
+  const { data: stats, isLoading } = useQuickStats();
+
+  const statItems = [
+    {
+      icon: CheckCircle2,
+      label: "Completed",
+      value: stats?.completedToday.toString() || "0",
+      subtext: "tasks today",
+      color: "text-emerald-400",
+      bgColor: "bg-emerald-500/10",
+    },
+    {
+      icon: Clock,
+      label: "Focus Time",
+      value: `${stats?.focusHours || "0"}h`,
+      subtext: "deep work",
+      color: "text-cosmic-silver",
+      bgColor: "bg-cosmic-silver/10",
+    },
+    {
+      icon: Target,
+      label: "Streak",
+      value: stats?.streak.toString() || "0",
+      subtext: "days",
+      color: "text-amber-400",
+      bgColor: "bg-amber-500/10",
+    },
+    {
+      icon: Zap,
+      label: "Efficiency",
+      value: `${stats?.efficiency || 0}%`,
+      subtext: "this week",
+      color: "text-cosmic-teal",
+      bgColor: "bg-cosmic-teal/10",
+    },
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className="h-24 rounded-xl" />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat, index) => (
+      {statItems.map((stat, index) => (
         <div
           key={stat.label}
           className="glass rounded-xl p-4 animate-fade-in hover:border-cosmic-silver/30 transition-all duration-300"
