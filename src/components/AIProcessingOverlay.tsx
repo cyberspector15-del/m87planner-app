@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -6,6 +6,16 @@ interface AIProcessingOverlayProps {
   isVisible: boolean;
   isComplete: boolean;
   onComplete?: () => void;
+}
+
+interface Star {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  opacity: number;
+  duration: number;
+  delay: number;
 }
 
 const statusMessages = [
@@ -22,6 +32,77 @@ const completionMessages = [
   "Schedule complete. Focus mode engaged.",
   "Today has been optimized.",
 ];
+
+// Generate star field
+const generateStars = (count: number): Star[] => {
+  return Array.from({ length: count }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    y: Math.random() * 100,
+    size: Math.random() * 2 + 0.5,
+    opacity: Math.random() * 0.5 + 0.2,
+    duration: Math.random() * 3 + 2,
+    delay: Math.random() * 2,
+  }));
+};
+
+const StarField = ({ isVisible }: { isVisible: boolean }) => {
+  const stars = useMemo(() => generateStars(60), []);
+
+  return (
+    <div className="absolute inset-0 overflow-hidden">
+      {stars.map((star) => (
+        <motion.div
+          key={star.id}
+          className="absolute rounded-full bg-cosmic-silver"
+          style={{
+            left: `${star.x}%`,
+            top: `${star.y}%`,
+            width: star.size,
+            height: star.size,
+          }}
+          initial={{ opacity: 0, scale: 0 }}
+          animate={
+            isVisible
+              ? {
+                  opacity: [star.opacity * 0.3, star.opacity, star.opacity * 0.3],
+                  scale: [0.8, 1, 0.8],
+                }
+              : { opacity: 0, scale: 0 }
+          }
+          transition={{
+            duration: star.duration,
+            delay: star.delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      ))}
+      {/* Shooting star effect - occasional */}
+      <motion.div
+        className="absolute h-px bg-gradient-to-r from-transparent via-cosmic-silver to-transparent"
+        style={{ width: "80px" }}
+        initial={{ x: "-100%", y: "20%", opacity: 0, rotate: 35 }}
+        animate={
+          isVisible
+            ? {
+                x: ["0%", "200%"],
+                y: ["20%", "60%"],
+                opacity: [0, 0.8, 0],
+              }
+            : {}
+        }
+        transition={{
+          duration: 1.5,
+          delay: 3,
+          repeat: Infinity,
+          repeatDelay: 8,
+          ease: "easeOut",
+        }}
+      />
+    </div>
+  );
+};
 
 const AIProcessingOverlay = ({
   isVisible,
@@ -89,7 +170,8 @@ const AIProcessingOverlay = ({
           {/* Gradient background */}
           <div className="absolute inset-0 bg-gradient-to-b from-cosmic-black via-cosmic-deep/90 to-cosmic-black" />
 
-          {/* Content container */}
+          {/* Star field */}
+          <StarField isVisible={isVisible} />
           <div className="relative z-10 flex flex-col items-center justify-center px-6">
             {/* Orbital ring animation */}
             <div className="relative w-48 h-48 sm:w-64 sm:h-64 mb-8">
