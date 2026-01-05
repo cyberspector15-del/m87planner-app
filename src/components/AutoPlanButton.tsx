@@ -1,6 +1,6 @@
 import { Sparkles, Wand2, Brain, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useAutoPlan } from "@/hooks/useAutoPlan";
 import {
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import AIProcessingOverlay from "./AIProcessingOverlay";
 
 interface AutoPlanButtonProps {
   selectedDate?: Date;
@@ -21,18 +22,42 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const [showOverlay, setShowOverlay] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
   const { autoPlan, isPlanning } = useAutoPlan();
 
   const handleAutoPlan = async () => {
+    setShowOverlay(true);
+    setIsComplete(false);
+    
     const result = await autoPlan(selectedDate);
+    
     if (result?.scheduled && result.scheduled.length > 0) {
       setResults(result.scheduled);
-      setShowResults(true);
+      setIsComplete(true);
+    } else {
+      // Even if no results, show completion
+      setIsComplete(true);
     }
   };
 
+  const handleOverlayComplete = useCallback(() => {
+    setShowOverlay(false);
+    setIsComplete(false);
+    if (results.length > 0) {
+      setShowResults(true);
+    }
+  }, [results.length]);
+
   return (
     <>
+      {/* AI Processing Overlay */}
+      <AIProcessingOverlay
+        isVisible={showOverlay}
+        isComplete={isComplete}
+        onComplete={handleOverlayComplete}
+      />
+
       <div className="glass rounded-xl p-6 relative overflow-hidden">
         {/* Animated background glow */}
         <div
@@ -74,9 +99,9 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
               onClick={handleAutoPlan}
-              disabled={isPlanning}
+              disabled={isPlanning || showOverlay}
             >
-              {isPlanning ? (
+              {isPlanning || showOverlay ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Planning...

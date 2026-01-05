@@ -54,6 +54,7 @@ export default {
         cosmic: {
           black: "hsl(var(--cosmic-black))",
           deep: "hsl(var(--cosmic-deep))",
+          grey: "hsl(var(--cosmic-surface))",
           surface: "hsl(var(--cosmic-surface))",
           silver: "hsl(var(--cosmic-silver))",
           "silver-bright": "hsl(var(--cosmic-silver-bright))",
