@@ -1,6 +1,9 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Volume2, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useHaptic } from "@/hooks/useHaptic";
+import { useCosmicSounds } from "@/hooks/useCosmicSounds";
 
 interface AIProcessingOverlayProps {
   isVisible: boolean;
@@ -112,25 +115,49 @@ const AIProcessingOverlay = ({
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
   const [completionMessage, setCompletionMessage] = useState("");
   const [showCompletion, setShowCompletion] = useState(false);
+  const hasPlayedInitiate = useRef(false);
 
-  // Cycle through status messages
+  const { vibrate } = useHaptic();
+  const { playInitiate, playTick, playComplete, isMuted, toggleMute } =
+    useCosmicSounds();
+
+  // Play initiate sound and haptic when overlay appears
+  useEffect(() => {
+    if (isVisible && !hasPlayedInitiate.current) {
+      hasPlayedInitiate.current = true;
+      playInitiate();
+      vibrate("processing");
+    }
+    if (!isVisible) {
+      hasPlayedInitiate.current = false;
+    }
+  }, [isVisible, playInitiate, vibrate]);
+
+  // Cycle through status messages with sound
   useEffect(() => {
     if (!isVisible || isComplete) return;
 
     const interval = setInterval(() => {
-      setCurrentMessageIndex((prev) => (prev + 1) % statusMessages.length);
+      setCurrentMessageIndex((prev) => {
+        const next = (prev + 1) % statusMessages.length;
+        playTick();
+        vibrate("light");
+        return next;
+      });
     }, 1400);
 
     return () => clearInterval(interval);
-  }, [isVisible, isComplete]);
+  }, [isVisible, isComplete, playTick, vibrate]);
 
-  // Handle completion
+  // Handle completion with sound and haptic
   useEffect(() => {
     if (isComplete && isVisible) {
       const randomMessage =
         completionMessages[Math.floor(Math.random() * completionMessages.length)];
       setCompletionMessage(randomMessage);
       setShowCompletion(true);
+      playComplete();
+      vibrate("success");
 
       const timer = setTimeout(() => {
         onComplete?.();
@@ -138,7 +165,7 @@ const AIProcessingOverlay = ({
 
       return () => clearTimeout(timer);
     }
-  }, [isComplete, isVisible, onComplete]);
+  }, [isComplete, isVisible, onComplete, playComplete, vibrate]);
 
   // Reset state when overlay closes
   useEffect(() => {
@@ -172,6 +199,23 @@ const AIProcessingOverlay = ({
 
           {/* Star field */}
           <StarField isVisible={isVisible} />
+
+          {/* Sound toggle button */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            onClick={toggleMute}
+            className="absolute top-6 right-6 z-20 p-3 rounded-full glass border border-cosmic-silver/20 hover:border-cosmic-silver/40 transition-colors"
+            aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
+          >
+            {isMuted ? (
+              <VolumeX className="w-5 h-5 text-cosmic-silver/60" />
+            ) : (
+              <Volume2 className="w-5 h-5 text-cosmic-silver" />
+            )}
+          </motion.button>
+
           <div className="relative z-10 flex flex-col items-center justify-center px-6">
             {/* Orbital ring animation */}
             <div className="relative w-48 h-48 sm:w-64 sm:h-64 mb-8">
