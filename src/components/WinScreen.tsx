@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCosmicSounds } from "@/hooks/useCosmicSounds";
@@ -215,6 +216,31 @@ const WinScreen = ({
                   boxShadow: "0 0 60px 20px hsl(var(--cosmic-silver) / 0.08)"
                 }}
               />
+            </motion.div>
+
+            {/* Checkmark icon - fades in subtly */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{
+                delay: 0.15,
+                duration: 0.4,
+                ease: [0.4, 0, 0.2, 1]
+              }}
+              className="mb-6"
+            >
+              <div 
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center"
+                style={{
+                  background: "radial-gradient(circle, hsl(var(--cosmic-silver) / 0.1) 0%, transparent 70%)",
+                  boxShadow: "0 0 40px 10px hsl(var(--cosmic-silver) / 0.05)"
+                }}
+              >
+                <Check 
+                  className="w-8 h-8 sm:w-10 sm:h-10 text-cosmic-silver/80" 
+                  strokeWidth={1.5}
+                />
+              </div>
             </motion.div>
 
             {/* Secondary subtle pulse behind text */}
