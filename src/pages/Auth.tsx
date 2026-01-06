@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import CosmicBackground from "@/components/CosmicBackground";
+import SplashOverlay from "@/components/SplashOverlay";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -21,6 +22,8 @@ type AuthFormValues = z.infer<typeof authSchema>;
 const Auth = () => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
+  const [splashVariant, setSplashVariant] = useState<"signin" | "signup">("signin");
   const { signUp, signIn, user, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -35,10 +38,15 @@ const Auth = () => {
 
   // Redirect authenticated users to dashboard
   useEffect(() => {
-    if (!loading && user) {
+    if (!loading && user && !showSplash) {
       navigate("/dashboard");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, showSplash]);
+
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    navigate("/dashboard");
+  };
 
   const onSubmit = async (values: AuthFormValues) => {
     setIsLoading(true);
@@ -61,11 +69,8 @@ const Auth = () => {
             });
           }
         } else {
-          toast({
-            title: "Account created",
-            description: "Welcome to M87 Planner!",
-          });
-          navigate("/dashboard");
+          setSplashVariant("signup");
+          setShowSplash(true);
         }
       } else {
         const { error } = await signIn(values.email, values.password);
@@ -84,11 +89,8 @@ const Auth = () => {
             });
           }
         } else {
-          toast({
-            title: "Welcome back",
-            description: "Successfully signed in.",
-          });
-          navigate("/dashboard");
+          setSplashVariant("signin");
+          setShowSplash(true);
         }
       }
     } catch (error) {
@@ -111,7 +113,13 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background relative flex items-center justify-center p-6">
+    <>
+      <SplashOverlay
+        isVisible={showSplash}
+        variant={splashVariant}
+        onComplete={handleSplashComplete}
+      />
+      <div className="min-h-screen bg-background relative flex items-center justify-center p-6">
       <CosmicBackground />
       
       <div className="relative z-10 w-full max-w-md">
@@ -237,7 +245,8 @@ const Auth = () => {
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
