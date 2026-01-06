@@ -13,6 +13,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import AIProcessingOverlay from "./AIProcessingOverlay";
+import WinScreen from "./WinScreen";
 
 interface AutoPlanButtonProps {
   selectedDate?: Date;
@@ -24,6 +25,7 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
   const [results, setResults] = useState<any[]>([]);
   const [showOverlay, setShowOverlay] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
+  const [showWinScreen, setShowWinScreen] = useState(false);
   const { autoPlan, isPlanning } = useAutoPlan();
 
   const handleAutoPlan = async () => {
@@ -44,6 +46,12 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
   const handleOverlayComplete = useCallback(() => {
     setShowOverlay(false);
     setIsComplete(false);
+    // Show win screen after AI processing completes
+    setShowWinScreen(true);
+  }, []);
+
+  const handleWinScreenComplete = useCallback(() => {
+    setShowWinScreen(false);
     if (results.length > 0) {
       setShowResults(true);
     }
@@ -56,6 +64,13 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
         isVisible={showOverlay}
         isComplete={isComplete}
         onComplete={handleOverlayComplete}
+      />
+
+      {/* Win Screen - emotional confirmation */}
+      <WinScreen
+        isVisible={showWinScreen}
+        variant="planning"
+        onComplete={handleWinScreenComplete}
       />
 
       <div className="glass rounded-xl p-6 relative overflow-hidden">
