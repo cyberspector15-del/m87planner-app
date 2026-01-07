@@ -6,7 +6,7 @@ import Timeline from "@/components/Timeline";
 import QuickStats from "@/components/QuickStats";
 import TaskList from "@/components/TaskList";
 import AutoPlanButton from "@/components/AutoPlanButton";
-import NLPInput from "@/components/NLPInput";
+import CommandCenter from "@/components/CommandCenter";
 import DateSelector from "@/components/DateSelector";
 import EventDialog from "@/components/EventDialog";
 import WeeklyProgressChart from "@/components/WeeklyProgressChart";
@@ -39,12 +39,17 @@ const Index = () => {
             </p>
           </div>
 
+          {/* AI Command Center - Primary Interaction */}
+          <div className="mb-8 animate-fade-in" style={{ animationDelay: "100ms" }}>
+            <CommandCenter />
+          </div>
+
           {/* Quick Stats & Weekly Chart */}
           <div className="mb-8 grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <QuickStats />
             </div>
-            <div className="animate-fade-in" style={{ animationDelay: "150ms" }}>
+            <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
               <WeeklyProgressChart />
             </div>
           </div>
@@ -54,7 +59,7 @@ const Index = () => {
             {/* Left Column - Timeline */}
             <div className="lg:col-span-2 space-y-6">
               {/* Date Selector */}
-              <div className="glass rounded-xl p-4 animate-fade-in" style={{ animationDelay: "200ms" }}>
+              <div className="glass rounded-xl p-4 animate-fade-in" style={{ animationDelay: "250ms" }}>
                 <DateSelector 
                   selectedDate={selectedDate} 
                   onDateChange={setSelectedDate} 
@@ -62,7 +67,7 @@ const Index = () => {
               </div>
 
               {/* Timeline */}
-              <div className="glass rounded-xl p-6 animate-fade-in" style={{ animationDelay: "300ms" }}>
+              <div className="glass rounded-xl p-6 animate-fade-in" style={{ animationDelay: "350ms" }}>
                 <div className="flex items-center justify-between mb-6">
                   <div>
                     <h2 className="font-display font-semibold text-foreground">
@@ -94,20 +99,15 @@ const Index = () => {
               </div>
             </div>
 
-            {/* Right Column - Tasks & AI */}
+            {/* Right Column - Auto Plan & Tasks */}
             <div className="space-y-6">
-              {/* AI Command Input */}
-              <div className="animate-fade-in" style={{ animationDelay: "400ms" }}>
-                <NLPInput />
-              </div>
-
               {/* Auto Plan Button */}
-              <div className="animate-fade-in" style={{ animationDelay: "500ms" }}>
+              <div className="animate-fade-in" style={{ animationDelay: "450ms" }}>
                 <AutoPlanButton selectedDate={selectedDate} />
               </div>
 
               {/* Task List */}
-              <div className="animate-fade-in" style={{ animationDelay: "600ms" }}>
+              <div className="animate-fade-in" style={{ animationDelay: "550ms" }}>
                 <TaskList />
               </div>
             </div>
