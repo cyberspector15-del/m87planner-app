@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Mic, Loader2, Check, Command, History } from "lucide-react";
+import { Send, Sparkles, Mic, MicOff, Loader2, Check, Command, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNLPParse } from "@/hooks/useNLPParse";
@@ -28,6 +28,11 @@ interface CommandCenterProps {
 const HISTORY_KEY = "m87-command-history";
 const MAX_HISTORY = 50;
 
+// Check for Web Speech API support
+const SpeechRecognition = typeof window !== "undefined"
+  ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  : null;
+
 const CommandCenter = ({ className }: CommandCenterProps) => {
   const [input, setInput] = useState("");
   const [isSpotlightActive, setIsSpotlightActive] = useState(false);
@@ -36,10 +41,70 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [tempInput, setTempInput] = useState("");
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const { parseCommand, isParsing } = useNLPParse();
   const { vibrate } = useHaptic();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Check for speech recognition support
+  useEffect(() => {
+    setSpeechSupported(!!SpeechRecognition);
+  }, []);
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onstart = () => {
+      setIsListening(true);
+      vibrate("light");
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+      vibrate("heavy");
+    };
+
+    recognition.onresult = (event: any) => {
+      const transcript = Array.from(event.results)
+        .map((result: any) => result[0])
+        .map((result: any) => result.transcript)
+        .join("");
+
+      setInput(transcript);
+
+      // If this is a final result, focus the input
+      if (event.results[0].isFinal) {
+        inputRef.current?.focus();
+        vibrate("medium");
+      }
+    };
+
+    recognitionRef.current = recognition;
+
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // Ignore errors when stopping
+        }
+      }
+    };
+  }, [vibrate]);
 
   // Load command history from localStorage
   useEffect(() => {
@@ -61,6 +126,25 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
     return () => clearInterval(interval);
   }, []);
 
+  // Toggle voice input
+  const toggleVoiceInput = useCallback(() => {
+    if (!recognitionRef.current) return;
+
+    if (isListening) {
+      recognitionRef.current.stop();
+      vibrate("light");
+    } else {
+      try {
+        recognitionRef.current.start();
+        // Activate spotlight mode when listening
+        setIsSpotlightActive(true);
+      } catch (e) {
+        console.error("Failed to start speech recognition:", e);
+        vibrate("heavy");
+      }
+    }
+  }, [isListening, vibrate]);
+
   // Global keyboard shortcut ⌘K / Ctrl+K
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -74,12 +158,16 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
         setIsSpotlightActive(false);
         setHistoryIndex(-1);
         setTempInput("");
+        // Stop listening if active
+        if (isListening && recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSpotlightActive, vibrate]);
+  }, [isSpotlightActive, isListening, vibrate]);
 
   // Click outside to close spotlight
   useEffect(() => {
@@ -88,6 +176,10 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
         setIsSpotlightActive(false);
         setHistoryIndex(-1);
         setTempInput("");
+        // Stop listening if active
+        if (isListening && recognitionRef.current) {
+          recognitionRef.current.stop();
+        }
       }
     };
 
@@ -95,7 +187,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
       document.addEventListener("mousedown", handleClickOutside);
     }
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isSpotlightActive]);
+  }, [isSpotlightActive, isListening]);
 
   const addToHistory = useCallback((command: string) => {
     const trimmed = command.trim();
@@ -349,19 +441,52 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                 maxLength={500}
               />
               
+              {/* Voice listening indicator */}
+              <AnimatePresence>
+                {isListening && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="absolute -top-6 right-0 flex items-center gap-1.5 text-xs text-cosmic-teal"
+                  >
+                    <motion.div
+                      className="w-2 h-2 rounded-full bg-cosmic-teal"
+                      animate={{ scale: [1, 1.3, 1], opacity: [1, 0.5, 1] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    />
+                    <span>Listening...</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              
               {/* Action buttons */}
               <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                 <Button
                   variant="ghost"
                   size="icon"
                   className={cn(
-                    "text-muted-foreground hover:text-foreground transition-all",
-                    isSpotlightActive ? "h-10 w-10" : "h-8 w-8"
+                    "transition-all",
+                    isSpotlightActive ? "h-10 w-10" : "h-8 w-8",
+                    isListening 
+                      ? "text-cosmic-teal bg-cosmic-teal/10 hover:bg-cosmic-teal/20" 
+                      : "text-muted-foreground hover:text-foreground",
+                    !speechSupported && "opacity-50 cursor-not-allowed"
                   )}
-                  disabled={isParsing}
-                  title="Voice commands coming soon"
+                  disabled={isParsing || !speechSupported}
+                  onClick={toggleVoiceInput}
+                  title={!speechSupported ? "Voice not supported in this browser" : isListening ? "Stop listening" : "Voice input"}
                 >
-                  <Mic className={isSpotlightActive ? "w-5 h-5" : "w-4 h-4"} />
+                  {isListening ? (
+                    <motion.div
+                      animate={{ scale: [1, 1.1, 1] }}
+                      transition={{ duration: 0.5, repeat: Infinity }}
+                    >
+                      <MicOff className={isSpotlightActive ? "w-5 h-5" : "w-4 h-4"} />
+                    </motion.div>
+                  ) : (
+                    <Mic className={isSpotlightActive ? "w-5 h-5" : "w-4 h-4"} />
+                  )}
                 </Button>
                 <Button
                   variant="cosmic-primary"
