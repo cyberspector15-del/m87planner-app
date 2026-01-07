@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Mic, Loader2, Check, Command } from "lucide-react";
+import { Send, Sparkles, Mic, Loader2, Check, Command, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNLPParse } from "@/hooks/useNLPParse";
@@ -315,6 +315,22 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
 
             {/* Input Field */}
             <div className="relative">
+              {/* History indicator */}
+              <AnimatePresence>
+                {historyIndex >= 0 && commandHistory.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute -top-6 left-0 flex items-center gap-1.5 text-xs text-cosmic-silver/70"
+                  >
+                    <History className="w-3 h-3" />
+                    <span className="font-mono">
+                      {historyIndex + 1} of {commandHistory.length}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
               <input
                 ref={inputRef}
                 type="text"
