@@ -25,15 +25,33 @@ interface CommandCenterProps {
   className?: string;
 }
 
+const HISTORY_KEY = "m87-command-history";
+const MAX_HISTORY = 50;
+
 const CommandCenter = ({ className }: CommandCenterProps) => {
   const [input, setInput] = useState("");
   const [isSpotlightActive, setIsSpotlightActive] = useState(false);
   const [lastSuccess, setLastSuccess] = useState(false);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [tempInput, setTempInput] = useState("");
   const { parseCommand, isParsing } = useNLPParse();
   const { vibrate } = useHaptic();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Load command history from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(HISTORY_KEY);
+      if (stored) {
+        setCommandHistory(JSON.parse(stored));
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }, []);
 
   // Rotate placeholders
   useEffect(() => {
@@ -54,6 +72,8 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
       }
       if (e.key === "Escape" && isSpotlightActive) {
         setIsSpotlightActive(false);
+        setHistoryIndex(-1);
+        setTempInput("");
       }
     };
 
@@ -66,6 +86,8 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
     const handleClickOutside = (e: MouseEvent) => {
       if (isSpotlightActive && containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setIsSpotlightActive(false);
+        setHistoryIndex(-1);
+        setTempInput("");
       }
     };
 
@@ -75,24 +97,47 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isSpotlightActive]);
 
+  const addToHistory = useCallback((command: string) => {
+    const trimmed = command.trim();
+    if (!trimmed) return;
+    
+    setCommandHistory((prev) => {
+      // Remove duplicate if exists
+      const filtered = prev.filter((c) => c !== trimmed);
+      // Add to beginning and limit size
+      const updated = [trimmed, ...filtered].slice(0, MAX_HISTORY);
+      try {
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
+      } catch {
+        // Ignore storage errors
+      }
+      return updated;
+    });
+  }, []);
+
   const handleSubmit = useCallback(async () => {
     if (!input.trim() || isParsing) return;
     
-    const result = await parseCommand(input);
+    const command = input.trim();
+    const result = await parseCommand(command);
     
     if (result && result.action !== "unknown") {
+      addToHistory(command);
       setLastSuccess(true);
       setInput("");
+      setHistoryIndex(-1);
+      setTempInput("");
       vibrate("success");
       setTimeout(() => {
         setLastSuccess(false);
         setIsSpotlightActive(false);
       }, 1500);
     }
-  }, [input, isParsing, parseCommand, vibrate]);
+  }, [input, isParsing, parseCommand, vibrate, addToHistory]);
 
   const handleSuggestionClick = (suggestion: string) => {
     setInput(suggestion);
+    setHistoryIndex(-1);
     vibrate("light");
     inputRef.current?.focus();
   };
@@ -101,6 +146,50 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
+      return;
+    }
+
+    // Arrow up - go back in history
+    if (e.key === "ArrowUp" && commandHistory.length > 0) {
+      e.preventDefault();
+      
+      if (historyIndex === -1) {
+        // Save current input before navigating history
+        setTempInput(input);
+      }
+      
+      const newIndex = Math.min(historyIndex + 1, commandHistory.length - 1);
+      setHistoryIndex(newIndex);
+      setInput(commandHistory[newIndex]);
+      vibrate("light");
+      return;
+    }
+
+    // Arrow down - go forward in history
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setInput(commandHistory[newIndex]);
+        vibrate("light");
+      } else if (historyIndex === 0) {
+        // Return to the original input
+        setHistoryIndex(-1);
+        setInput(tempInput);
+        vibrate("light");
+      }
+      return;
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+    // Reset history navigation when user types
+    if (historyIndex !== -1) {
+      setHistoryIndex(-1);
+      setTempInput("");
     }
   };
 
@@ -230,7 +319,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                 ref={inputRef}
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 onFocus={handleFocus}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholders[placeholderIndex]}
@@ -321,7 +410,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                   transition={{ delay: 0.2 }}
                   className="text-center text-xs text-muted-foreground/60 mt-4"
                 >
-                  Press <span className="font-mono text-cosmic-silver/70">Esc</span> to close • <span className="font-mono text-cosmic-silver/70">Enter</span> to submit
+                  <span className="font-mono text-cosmic-silver/70">↑↓</span> history • <span className="font-mono text-cosmic-silver/70">Esc</span> close • <span className="font-mono text-cosmic-silver/70">Enter</span> submit
                 </motion.p>
               )}
             </AnimatePresence>
