@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNLPParse } from "@/hooks/useNLPParse";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useCosmicSounds } from "@/hooks/useCosmicSounds";
 
 const suggestions = [
   "Plan my day",
@@ -45,6 +46,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
   const [speechSupported, setSpeechSupported] = useState(false);
   const { parseCommand, isParsing } = useNLPParse();
   const { vibrate } = useHaptic();
+  const { playVoiceConfirm } = useCosmicSounds();
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -86,10 +88,11 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
 
       setInput(transcript);
 
-      // If this is a final result, focus the input
+      // If this is a final result, play confirmation sound and focus input
       if (event.results[0].isFinal) {
         inputRef.current?.focus();
         vibrate("medium");
+        playVoiceConfirm();
       }
     };
 
