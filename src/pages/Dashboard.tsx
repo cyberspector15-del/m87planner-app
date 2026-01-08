@@ -10,11 +10,14 @@ import CommandCenter from "@/components/CommandCenter";
 import DateSelector from "@/components/DateSelector";
 import EventDialog from "@/components/EventDialog";
 import WeeklyProgressChart from "@/components/WeeklyProgressChart";
+import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
 import { useEvents } from "@/hooks/useEvents";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const { data: events } = useEvents(selectedDate);
+  const { showOnboarding, completeOnboarding } = useOnboarding();
 
   const eventCount = events?.length ?? 0;
   const dateLabel = isToday(selectedDate) 
@@ -24,6 +27,12 @@ const Index = () => {
   return (
     <div className="min-h-screen relative">
       <CosmicBackground />
+      
+      {/* Onboarding Flow */}
+      <OnboardingFlow
+        isVisible={showOnboarding}
+        onComplete={completeOnboarding}
+      />
       
       <div className="relative z-10">
         <Header />
