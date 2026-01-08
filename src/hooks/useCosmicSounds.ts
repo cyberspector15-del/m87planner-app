@@ -133,10 +133,42 @@ export const useCosmicSounds = () => {
     }
   }, [getAudioContext, isMuted]);
 
+  // Voice confirmation chirp - quick rising tone
+  const playVoiceConfirm = useCallback(() => {
+    if (isMuted) return;
+
+    try {
+      const ctx = getAudioContext();
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(1500, now);
+
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.12, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+      osc.connect(filter).connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } catch (e) {
+      // Audio not supported
+    }
+  }, [getAudioContext, isMuted]);
+
   return {
     playInitiate,
     playTick,
     playComplete,
+    playVoiceConfirm,
     isMuted,
     toggleMute,
   };
