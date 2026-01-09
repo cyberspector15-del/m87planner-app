@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { CalendarDays, Settings, Bell, LogOut } from "lucide-react";
 import logoIcon from "@/assets/logo-icon.jpg";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useHaptic } from "@/hooks/useHaptic";
 import {
   Sheet,
   SheetContent,
@@ -17,12 +19,14 @@ import AnalyticsPanel from "@/components/AnalyticsPanel";
 import { NotificationSettings } from "@/components/NotificationSettings";
 
 const Header = () => {
+  const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { vibrate } = useHaptic();
   const [routinesOpen, setRoutinesOpen] = useState(false);
   const [tasksOpen, setTasksOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -118,7 +122,7 @@ const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <Sheet open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <SheetTrigger asChild>
                 <Button variant="cosmic-ghost" size="icon" className="relative">
                   <Bell className="w-4 h-4" />
@@ -136,7 +140,14 @@ const Header = () => {
                 </div>
               </SheetContent>
             </Sheet>
-            <Button variant="cosmic-ghost" size="icon">
+            <Button
+              variant="cosmic-ghost"
+              size="icon"
+              onClick={() => {
+                vibrate("light");
+                navigate("/settings");
+              }}
+            >
               <Settings className="w-4 h-4" />
             </Button>
             <Button 
