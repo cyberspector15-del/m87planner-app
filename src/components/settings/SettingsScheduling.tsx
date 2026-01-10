@@ -1,39 +1,40 @@
-import { useState, useEffect } from "react";
 import { Clock, Brain, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useHaptic } from "@/hooks/useHaptic";
-
-interface SchedulingPrefs {
-  workStart: string;
-  workEnd: string;
-  focusStart: string;
-  focusEnd: string;
-  autoCarry: boolean;
-}
-
-const defaultPrefs: SchedulingPrefs = {
-  workStart: "09:00",
-  workEnd: "17:00",
-  focusStart: "09:00",
-  focusEnd: "12:00",
-  autoCarry: true,
-};
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const SettingsScheduling = () => {
   const { vibrate } = useHaptic();
-  const [prefs, setPrefs] = useState<SchedulingPrefs>(() => {
-    const saved = localStorage.getItem("m87_scheduling_prefs");
-    return saved ? JSON.parse(saved) : defaultPrefs;
-  });
+  const { settings, loading, updateSetting } = useUserSettings();
 
-  useEffect(() => {
-    localStorage.setItem("m87_scheduling_prefs", JSON.stringify(prefs));
-  }, [prefs]);
-
-  const handleChange = (key: keyof SchedulingPrefs, value: string | boolean) => {
+  const handleChange = (key: "workHoursStart" | "workHoursEnd" | "focusHoursStart" | "focusHoursEnd" | "autoCarryTasks", value: string | boolean) => {
     vibrate("light");
-    setPrefs((prev) => ({ ...prev, [key]: value }));
+    updateSetting(key, value as never);
   };
+
+  if (loading) {
+    return (
+      <div className="glass rounded-2xl p-6 space-y-5">
+        <Skeleton className="h-6 w-48" />
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-32" />
+          <div className="flex gap-3">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 flex-1" />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-40" />
+          <div className="flex gap-3">
+            <Skeleton className="h-10 flex-1" />
+            <Skeleton className="h-10 flex-1" />
+          </div>
+        </div>
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="glass rounded-2xl p-6 space-y-5">
@@ -52,15 +53,15 @@ const SettingsScheduling = () => {
         <div className="flex items-center gap-3">
           <input
             type="time"
-            value={prefs.workStart}
-            onChange={(e) => handleChange("workStart", e.target.value)}
+            value={settings.workHoursStart}
+            onChange={(e) => handleChange("workHoursStart", e.target.value)}
             className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
           />
           <span className="text-muted-foreground text-sm">to</span>
           <input
             type="time"
-            value={prefs.workEnd}
-            onChange={(e) => handleChange("workEnd", e.target.value)}
+            value={settings.workHoursEnd}
+            onChange={(e) => handleChange("workHoursEnd", e.target.value)}
             className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
           />
         </div>
@@ -75,15 +76,15 @@ const SettingsScheduling = () => {
         <div className="flex items-center gap-3">
           <input
             type="time"
-            value={prefs.focusStart}
-            onChange={(e) => handleChange("focusStart", e.target.value)}
+            value={settings.focusHoursStart}
+            onChange={(e) => handleChange("focusHoursStart", e.target.value)}
             className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
           />
           <span className="text-muted-foreground text-sm">to</span>
           <input
             type="time"
-            value={prefs.focusEnd}
-            onChange={(e) => handleChange("focusEnd", e.target.value)}
+            value={settings.focusHoursEnd}
+            onChange={(e) => handleChange("focusHoursEnd", e.target.value)}
             className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
           />
         </div>
@@ -103,8 +104,8 @@ const SettingsScheduling = () => {
           </div>
         </div>
         <Switch
-          checked={prefs.autoCarry}
-          onCheckedChange={(checked) => handleChange("autoCarry", checked)}
+          checked={settings.autoCarryTasks}
+          onCheckedChange={(checked) => handleChange("autoCarryTasks", checked)}
         />
       </div>
     </div>

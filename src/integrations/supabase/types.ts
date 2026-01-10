@@ -114,13 +114,22 @@ export type Database = {
       }
       profiles: {
         Row: {
+          ai_strictness: string | null
+          ask_before_reschedule: boolean | null
+          auto_carry_tasks: boolean | null
           commute_tolerance_minutes: number | null
           created_at: string
           email: string | null
+          focus_hours_end: string | null
+          focus_hours_start: string | null
+          haptic_enabled: boolean | null
           id: string
           name: string | null
           notifications_enabled: boolean | null
+          planning_mode: string | null
           reminder_minutes: number | null
+          show_ai_explanations: boolean | null
+          sound_enabled: boolean | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -128,13 +137,22 @@ export type Database = {
           work_hours_start: string | null
         }
         Insert: {
+          ai_strictness?: string | null
+          ask_before_reschedule?: boolean | null
+          auto_carry_tasks?: boolean | null
           commute_tolerance_minutes?: number | null
           created_at?: string
           email?: string | null
+          focus_hours_end?: string | null
+          focus_hours_start?: string | null
+          haptic_enabled?: boolean | null
           id?: string
           name?: string | null
           notifications_enabled?: boolean | null
+          planning_mode?: string | null
           reminder_minutes?: number | null
+          show_ai_explanations?: boolean | null
+          sound_enabled?: boolean | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -142,13 +160,22 @@ export type Database = {
           work_hours_start?: string | null
         }
         Update: {
+          ai_strictness?: string | null
+          ask_before_reschedule?: boolean | null
+          auto_carry_tasks?: boolean | null
           commute_tolerance_minutes?: number | null
           created_at?: string
           email?: string | null
+          focus_hours_end?: string | null
+          focus_hours_start?: string | null
+          haptic_enabled?: boolean | null
           id?: string
           name?: string | null
           notifications_enabled?: boolean | null
+          planning_mode?: string | null
           reminder_minutes?: number | null
+          show_ai_explanations?: boolean | null
+          sound_enabled?: boolean | null
           timezone?: string | null
           updated_at?: string
           user_id?: string
