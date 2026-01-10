@@ -9,7 +9,6 @@ import AutoPlanButton from "@/components/AutoPlanButton";
 import CommandCenter from "@/components/CommandCenter";
 import DateSelector from "@/components/DateSelector";
 import EventDialog from "@/components/EventDialog";
-import WeeklyProgressChart from "@/components/WeeklyProgressChart";
 import OnboardingFlow from "@/components/onboarding/OnboardingFlow";
 import { useEvents } from "@/hooks/useEvents";
 import { useOnboarding } from "@/hooks/useOnboarding";
@@ -53,14 +52,9 @@ const Index = () => {
             <CommandCenter />
           </div>
 
-          {/* Quick Stats & Weekly Chart */}
-          <div className="mb-8 grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <QuickStats />
-            </div>
-            <div className="animate-fade-in" style={{ animationDelay: "200ms" }}>
-              <WeeklyProgressChart />
-            </div>
+          {/* Quick Stats */}
+          <div className="mb-8">
+            <QuickStats />
           </div>
 
           {/* Main Grid */}
