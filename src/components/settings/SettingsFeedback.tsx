@@ -1,35 +1,29 @@
-import { useState, useEffect } from "react";
 import { Vibrate, Volume2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useHaptic } from "@/hooks/useHaptic";
-
-interface FeedbackPrefs {
-  hapticEnabled: boolean;
-  soundEnabled: boolean;
-}
-
-const defaultPrefs: FeedbackPrefs = {
-  hapticEnabled: true,
-  soundEnabled: true,
-};
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const SettingsFeedback = () => {
   const { vibrate } = useHaptic();
-  const [prefs, setPrefs] = useState<FeedbackPrefs>(() => {
-    const saved = localStorage.getItem("m87_feedback_prefs");
-    return saved ? JSON.parse(saved) : defaultPrefs;
-  });
+  const { settings, loading, updateSetting } = useUserSettings();
 
-  useEffect(() => {
-    localStorage.setItem("m87_feedback_prefs", JSON.stringify(prefs));
-  }, [prefs]);
-
-  const handleChange = (key: keyof FeedbackPrefs, value: boolean) => {
+  const handleChange = (key: "hapticEnabled" | "soundEnabled", value: boolean) => {
     if (key === "hapticEnabled" && value) {
       vibrate("medium");
     }
-    setPrefs((prev) => ({ ...prev, [key]: value }));
+    updateSetting(key, value);
   };
+
+  if (loading) {
+    return (
+      <div className="glass rounded-2xl p-6 space-y-4">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="glass rounded-2xl p-6 space-y-4">
@@ -48,7 +42,7 @@ const SettingsFeedback = () => {
             <span className="text-sm text-foreground">Haptic feedback</span>
           </div>
           <Switch
-            checked={prefs.hapticEnabled}
+            checked={settings.hapticEnabled}
             onCheckedChange={(checked) => handleChange("hapticEnabled", checked)}
           />
         </div>
@@ -61,7 +55,7 @@ const SettingsFeedback = () => {
             <span className="text-sm text-foreground">Sound effects</span>
           </div>
           <Switch
-            checked={prefs.soundEnabled}
+            checked={settings.soundEnabled}
             onCheckedChange={(checked) => handleChange("soundEnabled", checked)}
           />
         </div>

@@ -1,21 +1,10 @@
-import { useState, useEffect } from "react";
 import { Zap, MessageSquare, HelpCircle } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useUserSettings } from "@/hooks/useUserSettings";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type StrictnessLevel = "calm" | "balanced" | "strict";
-
-interface AIBehaviorPrefs {
-  strictness: StrictnessLevel;
-  askBeforeReschedule: boolean;
-  showExplanations: boolean;
-}
-
-const defaultPrefs: AIBehaviorPrefs = {
-  strictness: "balanced",
-  askBeforeReschedule: true,
-  showExplanations: true,
-};
 
 const strictnessOptions: { value: StrictnessLevel; label: string; description: string }[] = [
   { value: "calm", label: "Calm", description: "Gentle suggestions" },
@@ -25,19 +14,30 @@ const strictnessOptions: { value: StrictnessLevel; label: string; description: s
 
 const SettingsAIBehavior = () => {
   const { vibrate } = useHaptic();
-  const [prefs, setPrefs] = useState<AIBehaviorPrefs>(() => {
-    const saved = localStorage.getItem("m87_ai_behavior_prefs");
-    return saved ? JSON.parse(saved) : defaultPrefs;
-  });
+  const { settings, loading, updateSetting } = useUserSettings();
 
-  useEffect(() => {
-    localStorage.setItem("m87_ai_behavior_prefs", JSON.stringify(prefs));
-  }, [prefs]);
-
-  const handleChange = (key: keyof AIBehaviorPrefs, value: StrictnessLevel | boolean) => {
+  const handleChange = (key: "aiStrictness" | "askBeforeReschedule" | "showAiExplanations", value: StrictnessLevel | boolean) => {
     vibrate("light");
-    setPrefs((prev) => ({ ...prev, [key]: value }));
+    updateSetting(key, value as never);
   };
+
+  if (loading) {
+    return (
+      <div className="glass rounded-2xl p-6 space-y-5">
+        <Skeleton className="h-6 w-32" />
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-24" />
+          <div className="grid grid-cols-3 gap-2">
+            <Skeleton className="h-16 rounded-xl" />
+            <Skeleton className="h-16 rounded-xl" />
+            <Skeleton className="h-16 rounded-xl" />
+          </div>
+        </div>
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="glass rounded-2xl p-6 space-y-5">
@@ -57,16 +57,16 @@ const SettingsAIBehavior = () => {
           {strictnessOptions.map((option) => (
             <button
               key={option.value}
-              onClick={() => handleChange("strictness", option.value)}
+              onClick={() => handleChange("aiStrictness", option.value)}
               className={`relative p-3 rounded-xl border text-center transition-all duration-300 ${
-                prefs.strictness === option.value
+                settings.aiStrictness === option.value
                   ? "border-cosmic-silver/50 bg-cosmic-surface/50"
                   : "border-border/30 bg-card/20 hover:border-border/50"
               }`}
             >
               <span
                 className={`font-medium text-sm block ${
-                  prefs.strictness === option.value
+                  settings.aiStrictness === option.value
                     ? "text-foreground"
                     : "text-muted-foreground"
                 }`}
@@ -74,7 +74,7 @@ const SettingsAIBehavior = () => {
                 {option.label}
               </span>
               <span className="text-xs text-muted-foreground">{option.description}</span>
-              {prefs.strictness === option.value && (
+              {settings.aiStrictness === option.value && (
                 <div className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-cosmic-accent-teal" />
               )}
             </button>
@@ -92,7 +92,7 @@ const SettingsAIBehavior = () => {
             <span className="text-sm text-foreground">Ask before rescheduling</span>
           </div>
           <Switch
-            checked={prefs.askBeforeReschedule}
+            checked={settings.askBeforeReschedule}
             onCheckedChange={(checked) => handleChange("askBeforeReschedule", checked)}
           />
         </div>
@@ -105,8 +105,8 @@ const SettingsAIBehavior = () => {
             <span className="text-sm text-foreground">Show AI explanations</span>
           </div>
           <Switch
-            checked={prefs.showExplanations}
-            onCheckedChange={(checked) => handleChange("showExplanations", checked)}
+            checked={settings.showAiExplanations}
+            onCheckedChange={(checked) => handleChange("showAiExplanations", checked)}
           />
         </div>
       </div>
