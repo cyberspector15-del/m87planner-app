@@ -1,14 +1,13 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 
 // Cosmic sound effects using Web Audio API
 export const useCosmicSounds = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
-  const [isMuted, setIsMuted] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("cosmic-sounds-muted") === "true";
-    }
-    return false;
-  });
+  const { settings, updateSetting } = useSettings();
+
+  // Sound is muted if soundEnabled is false
+  const isMuted = !settings.soundEnabled;
 
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current) {
@@ -19,12 +18,8 @@ export const useCosmicSounds = () => {
   }, []);
 
   const toggleMute = useCallback(() => {
-    setIsMuted((prev) => {
-      const newValue = !prev;
-      localStorage.setItem("cosmic-sounds-muted", String(newValue));
-      return newValue;
-    });
-  }, []);
+    updateSetting("soundEnabled", !settings.soundEnabled);
+  }, [settings.soundEnabled, updateSetting]);
 
   // Soft ambient hum - plays when overlay starts
   const playInitiate = useCallback(() => {
@@ -171,5 +166,6 @@ export const useCosmicSounds = () => {
     playVoiceConfirm,
     isMuted,
     toggleMute,
+    isEnabled: settings.soundEnabled,
   };
 };

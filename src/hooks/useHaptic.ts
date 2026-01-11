@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { useSettings } from "@/contexts/SettingsContext";
 
 type HapticPattern = "light" | "medium" | "heavy" | "success" | "processing";
 
@@ -11,7 +12,12 @@ const patterns: Record<HapticPattern, number | number[]> = {
 };
 
 export const useHaptic = () => {
+  const { settings } = useSettings();
+
   const vibrate = useCallback((pattern: HapticPattern = "light") => {
+    // Check if haptics are enabled in settings
+    if (!settings.hapticEnabled) return;
+    
     if (!("vibrate" in navigator)) return;
     
     try {
@@ -19,7 +25,7 @@ export const useHaptic = () => {
     } catch (e) {
       // Vibration not supported or blocked
     }
-  }, []);
+  }, [settings.hapticEnabled]);
 
-  return { vibrate };
+  return { vibrate, isEnabled: settings.hapticEnabled };
 };
