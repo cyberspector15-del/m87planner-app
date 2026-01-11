@@ -73,17 +73,26 @@ serve(async (req) => {
       throw eventsError;
     }
 
-    // Fetch user profile for work hours
+    // Fetch user profile for all settings
     const { data: profile } = await supabase
       .from("profiles")
-      .select("work_hours_start, work_hours_end, timezone")
+      .select(`
+        work_hours_start, work_hours_end, 
+        focus_hours_start, focus_hours_end,
+        ai_strictness, timezone
+      `)
       .eq("user_id", user.id)
       .single();
 
+    // Extract settings with defaults
     const workStart = profile?.work_hours_start || "09:00:00";
     const workEnd = profile?.work_hours_end || "17:00:00";
+    const focusStart = profile?.focus_hours_start || "09:00:00";
+    const focusEnd = profile?.focus_hours_end || "12:00:00";
+    const aiStrictness = profile?.ai_strictness || "balanced";
 
     console.log(`Found ${tasks?.length || 0} tasks and ${existingEvents?.length || 0} existing events`);
+    console.log(`User settings: work=${workStart}-${workEnd}, focus=${focusStart}-${focusEnd}, strictness=${aiStrictness}`);
 
     if (!tasks || tasks.length === 0) {
       return new Response(JSON.stringify({ 
@@ -111,12 +120,50 @@ serve(async (req) => {
       end_time: e.end_time,
     })) || [];
 
+    // Build strictness-specific instructions
+    let strictnessInstructions = "";
+    switch (aiStrictness) {
+      case "calm":
+        strictnessInstructions = `
+SCHEDULING STYLE: CALM
+- Be conservative with scheduling - leave plenty of buffer time
+- Prefer spreading tasks out rather than clustering them
+- Leave at least 30-minute buffers between events
+- Prioritize user comfort over efficiency
+- If in doubt, leave a slot open rather than filling it
+- Don't reschedule too aggressively`;
+        break;
+      case "strict":
+        strictnessInstructions = `
+SCHEDULING STYLE: STRICT
+- Maximize productivity by filling available slots efficiently
+- Use minimal buffer time (10-15 minutes) between tasks
+- Aggressively schedule high-priority tasks in prime focus hours
+- Don't waste any good time slots
+- Optimize heavily for deadline compliance
+- Prefer back-to-back scheduling when locations match`;
+        break;
+      case "balanced":
+      default:
+        strictnessInstructions = `
+SCHEDULING STYLE: BALANCED
+- Strike a balance between productivity and comfort
+- Use 15-minute buffers between events when possible
+- Prioritize focus hours for deep work, but be flexible
+- Consider task context when grouping
+- Leave some breathing room but don't waste time`;
+        break;
+    }
+
     const prompt = `You are an AI scheduling assistant for M87 Planner. Your job is to intelligently schedule tasks into available time slots.
 
 Context:
 - Date to schedule: ${targetDate.toDateString()}
 - Work hours: ${workStart} to ${workEnd}
+- Focus/Deep Work hours: ${focusStart} to ${focusEnd} (best for high-priority, complex tasks)
 - Current time zone should be considered for scheduling
+
+${strictnessInstructions}
 
 Existing events (already scheduled, cannot overlap):
 ${JSON.stringify(eventsContext, null, 2)}
@@ -126,11 +173,12 @@ ${JSON.stringify(tasksContext, null, 2)}
 
 Rules:
 1. Never overlap with existing events
-2. Prioritize high priority tasks for earlier slots
+2. Prioritize high priority tasks for focus hours (${focusStart} to ${focusEnd})
 3. Consider task deadlines - urgent deadlines should be scheduled sooner
-4. Leave 15-minute buffers between events when possible
-5. Schedule within work hours unless tasks are flexible
+4. Apply the ${aiStrictness.toUpperCase()} scheduling style described above
+5. Schedule within work hours unless tasks are marked flexible
 6. Consider task duration when finding slots
+7. Group similar tasks or tasks at same location when practical
 
 Return a JSON array of scheduled tasks with this exact format:
 [
