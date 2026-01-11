@@ -3,15 +3,116 @@ import { Switch } from "@/components/ui/switch";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCallback } from "react";
+
+// Helper to compare times
+const timeToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+const clampTime = (time: string, min: string, max: string): string => {
+  const timeMin = timeToMinutes(time);
+  const minMin = timeToMinutes(min);
+  const maxMin = timeToMinutes(max);
+  
+  if (timeMin < minMin) return min;
+  if (timeMin > maxMin) return max;
+  return time;
+};
 
 const SettingsScheduling = () => {
   const { vibrate } = useHaptic();
   const { settings, loading, updateSetting } = useUserSettings();
 
-  const handleChange = (key: "workHoursStart" | "workHoursEnd" | "focusHoursStart" | "focusHoursEnd" | "autoCarryTasks", value: string | boolean) => {
-    vibrate("light");
-    updateSetting(key, value as never);
-  };
+  // Handle working hours with validation
+  const handleWorkHoursChange = useCallback(
+    (type: "start" | "end", value: string) => {
+      if (!value) return;
+      
+      vibrate("light");
+      
+      if (type === "start") {
+        updateSetting("workHoursStart", value);
+        // If start is after end, adjust end
+        if (timeToMinutes(value) >= timeToMinutes(settings.workHoursEnd)) {
+          const newEnd = `${String(Math.min(23, parseInt(value.split(":")[0]) + 1)).padStart(2, "0")}:00`;
+          updateSetting("workHoursEnd", newEnd);
+        }
+        // Clamp focus hours to stay within new working hours
+        const clampedFocusStart = clampTime(settings.focusHoursStart, value, settings.workHoursEnd);
+        const clampedFocusEnd = clampTime(settings.focusHoursEnd, value, settings.workHoursEnd);
+        if (clampedFocusStart !== settings.focusHoursStart) {
+          updateSetting("focusHoursStart", clampedFocusStart);
+        }
+        if (clampedFocusEnd !== settings.focusHoursEnd) {
+          updateSetting("focusHoursEnd", clampedFocusEnd);
+        }
+      } else {
+        updateSetting("workHoursEnd", value);
+        // If end is before start, adjust start
+        if (timeToMinutes(value) <= timeToMinutes(settings.workHoursStart)) {
+          const newStart = `${String(Math.max(0, parseInt(value.split(":")[0]) - 1)).padStart(2, "0")}:00`;
+          updateSetting("workHoursStart", newStart);
+        }
+        // Clamp focus hours to stay within new working hours
+        const clampedFocusStart = clampTime(settings.focusHoursStart, settings.workHoursStart, value);
+        const clampedFocusEnd = clampTime(settings.focusHoursEnd, settings.workHoursStart, value);
+        if (clampedFocusStart !== settings.focusHoursStart) {
+          updateSetting("focusHoursStart", clampedFocusStart);
+        }
+        if (clampedFocusEnd !== settings.focusHoursEnd) {
+          updateSetting("focusHoursEnd", clampedFocusEnd);
+        }
+      }
+    },
+    [settings, updateSetting, vibrate]
+  );
+
+  // Handle focus hours with validation (must stay within working hours)
+  const handleFocusHoursChange = useCallback(
+    (type: "start" | "end", value: string) => {
+      if (!value) return;
+      
+      vibrate("light");
+      
+      // Clamp to working hours
+      const clampedValue = clampTime(value, settings.workHoursStart, settings.workHoursEnd);
+      
+      if (type === "start") {
+        updateSetting("focusHoursStart", clampedValue);
+        // If start is after end, adjust end
+        if (timeToMinutes(clampedValue) >= timeToMinutes(settings.focusHoursEnd)) {
+          const newEnd = clampTime(
+            `${String(Math.min(23, parseInt(clampedValue.split(":")[0]) + 1)).padStart(2, "0")}:00`,
+            settings.workHoursStart,
+            settings.workHoursEnd
+          );
+          updateSetting("focusHoursEnd", newEnd);
+        }
+      } else {
+        updateSetting("focusHoursEnd", clampedValue);
+        // If end is before start, adjust start
+        if (timeToMinutes(clampedValue) <= timeToMinutes(settings.focusHoursStart)) {
+          const newStart = clampTime(
+            `${String(Math.max(0, parseInt(clampedValue.split(":")[0]) - 1)).padStart(2, "0")}:00`,
+            settings.workHoursStart,
+            settings.workHoursEnd
+          );
+          updateSetting("focusHoursStart", newStart);
+        }
+      }
+    },
+    [settings, updateSetting, vibrate]
+  );
+
+  const handleAutoCarryChange = useCallback(
+    (checked: boolean) => {
+      vibrate("light");
+      updateSetting("autoCarryTasks", checked);
+    },
+    [updateSetting, vibrate]
+  );
 
   if (loading) {
     return (
@@ -54,15 +155,15 @@ const SettingsScheduling = () => {
           <input
             type="time"
             value={settings.workHoursStart}
-            onChange={(e) => handleChange("workHoursStart", e.target.value)}
-            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
+            onChange={(e) => handleWorkHoursChange("start", e.target.value)}
+            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
           />
           <span className="text-muted-foreground text-sm">to</span>
           <input
             type="time"
             value={settings.workHoursEnd}
-            onChange={(e) => handleChange("workHoursEnd", e.target.value)}
-            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
+            onChange={(e) => handleWorkHoursChange("end", e.target.value)}
+            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
           />
         </div>
       </div>
@@ -77,17 +178,24 @@ const SettingsScheduling = () => {
           <input
             type="time"
             value={settings.focusHoursStart}
-            onChange={(e) => handleChange("focusHoursStart", e.target.value)}
-            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
+            onChange={(e) => handleFocusHoursChange("start", e.target.value)}
+            min={settings.workHoursStart}
+            max={settings.workHoursEnd}
+            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
           />
           <span className="text-muted-foreground text-sm">to</span>
           <input
             type="time"
             value={settings.focusHoursEnd}
-            onChange={(e) => handleChange("focusHoursEnd", e.target.value)}
-            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
+            onChange={(e) => handleFocusHoursChange("end", e.target.value)}
+            min={settings.workHoursStart}
+            max={settings.workHoursEnd}
+            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
           />
         </div>
+        <p className="text-xs text-muted-foreground/70">
+          Must be within working hours
+        </p>
       </div>
 
       {/* Auto Carry */}
@@ -105,7 +213,7 @@ const SettingsScheduling = () => {
         </div>
         <Switch
           checked={settings.autoCarryTasks}
-          onCheckedChange={(checked) => handleChange("autoCarryTasks", checked)}
+          onCheckedChange={handleAutoCarryChange}
         />
       </div>
     </div>
