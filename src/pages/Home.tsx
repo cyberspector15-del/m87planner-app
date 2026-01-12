@@ -2,7 +2,7 @@ import { ArrowRight, Sparkles, Clock, MapPin, Brain, Calendar } from "lucide-rea
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
-import heroImage from "@/assets/m87-hero.png";
+import heroVideo from "@/assets/m87-hero-video.mp4";
 const features = [{
   icon: Brain,
   title: "AI Auto-Scheduler",
@@ -47,13 +47,16 @@ const Home = () => {
   return <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Hero Section with M87 Image */}
       <section className="relative min-h-screen flex flex-col items-center justify-center">
-        {/* Background Image */}
-        <div className="absolute inset-0 z-0" style={{
-        backgroundImage: `url(${heroImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
-      }} />
+        {/* Background Video */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 z-0 w-full h-full object-cover"
+        >
+          <source src={heroVideo} type="video/mp4" />
+        </video>
         
         {/* Gradient Overlays for better text readability */}
         <div className="absolute inset-0 z-[1] bg-gradient-to-t from-background via-transparent to-background/50" />
