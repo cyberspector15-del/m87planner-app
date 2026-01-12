@@ -1,9 +1,10 @@
-import { Clock, Brain, RotateCcw } from "lucide-react";
+import { Clock, Brain, RotateCcw, Check } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useCallback } from "react";
+import { useCallback, useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Helper to compare times
 const timeToMinutes = (time: string): number => {
@@ -21,9 +22,45 @@ const clampTime = (time: string, min: string, max: string): string => {
   return time;
 };
 
+// Save indicator component
+const SaveIndicator = ({ show }: { show: boolean }) => (
+  <AnimatePresence>
+    {show && (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.5 }}
+        className="absolute -right-1 -top-1 w-5 h-5 bg-green-500/90 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30"
+      >
+        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
 const SettingsScheduling = () => {
   const { vibrate } = useHaptic();
   const { settings, loading, updateSetting } = useUserSettings();
+  
+  // Track which fields were recently saved
+  const [savedFields, setSavedFields] = useState<Record<string, boolean>>({});
+
+  // Show save indicator for a field
+  const showSaveIndicator = useCallback((field: string) => {
+    setSavedFields(prev => ({ ...prev, [field]: true }));
+  }, []);
+
+  // Auto-hide save indicators after 1.5 seconds
+  useEffect(() => {
+    const activeFields = Object.entries(savedFields).filter(([_, show]) => show);
+    if (activeFields.length === 0) return;
+
+    const timer = setTimeout(() => {
+      setSavedFields({});
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [savedFields]);
 
   // Handle working hours with validation
   const handleWorkHoursChange = useCallback(
@@ -34,39 +71,47 @@ const SettingsScheduling = () => {
       
       if (type === "start") {
         updateSetting("workHoursStart", value);
+        showSaveIndicator("workHoursStart");
         // If start is after end, adjust end
         if (timeToMinutes(value) >= timeToMinutes(settings.workHoursEnd)) {
           const newEnd = `${String(Math.min(23, parseInt(value.split(":")[0]) + 1)).padStart(2, "0")}:00`;
           updateSetting("workHoursEnd", newEnd);
+          showSaveIndicator("workHoursEnd");
         }
         // Clamp focus hours to stay within new working hours
         const clampedFocusStart = clampTime(settings.focusHoursStart, value, settings.workHoursEnd);
         const clampedFocusEnd = clampTime(settings.focusHoursEnd, value, settings.workHoursEnd);
         if (clampedFocusStart !== settings.focusHoursStart) {
           updateSetting("focusHoursStart", clampedFocusStart);
+          showSaveIndicator("focusHoursStart");
         }
         if (clampedFocusEnd !== settings.focusHoursEnd) {
           updateSetting("focusHoursEnd", clampedFocusEnd);
+          showSaveIndicator("focusHoursEnd");
         }
       } else {
         updateSetting("workHoursEnd", value);
+        showSaveIndicator("workHoursEnd");
         // If end is before start, adjust start
         if (timeToMinutes(value) <= timeToMinutes(settings.workHoursStart)) {
           const newStart = `${String(Math.max(0, parseInt(value.split(":")[0]) - 1)).padStart(2, "0")}:00`;
           updateSetting("workHoursStart", newStart);
+          showSaveIndicator("workHoursStart");
         }
         // Clamp focus hours to stay within new working hours
         const clampedFocusStart = clampTime(settings.focusHoursStart, settings.workHoursStart, value);
         const clampedFocusEnd = clampTime(settings.focusHoursEnd, settings.workHoursStart, value);
         if (clampedFocusStart !== settings.focusHoursStart) {
           updateSetting("focusHoursStart", clampedFocusStart);
+          showSaveIndicator("focusHoursStart");
         }
         if (clampedFocusEnd !== settings.focusHoursEnd) {
           updateSetting("focusHoursEnd", clampedFocusEnd);
+          showSaveIndicator("focusHoursEnd");
         }
       }
     },
-    [settings, updateSetting, vibrate]
+    [settings, updateSetting, vibrate, showSaveIndicator]
   );
 
   // Handle focus hours with validation (must stay within working hours)
@@ -81,6 +126,7 @@ const SettingsScheduling = () => {
       
       if (type === "start") {
         updateSetting("focusHoursStart", clampedValue);
+        showSaveIndicator("focusHoursStart");
         // If start is after end, adjust end
         if (timeToMinutes(clampedValue) >= timeToMinutes(settings.focusHoursEnd)) {
           const newEnd = clampTime(
@@ -89,9 +135,11 @@ const SettingsScheduling = () => {
             settings.workHoursEnd
           );
           updateSetting("focusHoursEnd", newEnd);
+          showSaveIndicator("focusHoursEnd");
         }
       } else {
         updateSetting("focusHoursEnd", clampedValue);
+        showSaveIndicator("focusHoursEnd");
         // If end is before start, adjust start
         if (timeToMinutes(clampedValue) <= timeToMinutes(settings.focusHoursStart)) {
           const newStart = clampTime(
@@ -100,18 +148,20 @@ const SettingsScheduling = () => {
             settings.workHoursEnd
           );
           updateSetting("focusHoursStart", newStart);
+          showSaveIndicator("focusHoursStart");
         }
       }
     },
-    [settings, updateSetting, vibrate]
+    [settings, updateSetting, vibrate, showSaveIndicator]
   );
 
   const handleAutoCarryChange = useCallback(
     (checked: boolean) => {
       vibrate("light");
       updateSetting("autoCarryTasks", checked);
+      showSaveIndicator("autoCarryTasks");
     },
-    [updateSetting, vibrate]
+    [updateSetting, vibrate, showSaveIndicator]
   );
 
   if (loading) {
@@ -152,19 +202,25 @@ const SettingsScheduling = () => {
           <span>Working Hours</span>
         </div>
         <div className="flex items-center gap-3">
-          <input
-            type="time"
-            value={settings.workHoursStart}
-            onChange={(e) => handleWorkHoursChange("start", e.target.value)}
-            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
-          />
+          <div className="relative flex-1">
+            <input
+              type="time"
+              value={settings.workHoursStart}
+              onChange={(e) => handleWorkHoursChange("start", e.target.value)}
+              className="w-full bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
+            />
+            <SaveIndicator show={savedFields.workHoursStart} />
+          </div>
           <span className="text-muted-foreground text-sm">to</span>
-          <input
-            type="time"
-            value={settings.workHoursEnd}
-            onChange={(e) => handleWorkHoursChange("end", e.target.value)}
-            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
-          />
+          <div className="relative flex-1">
+            <input
+              type="time"
+              value={settings.workHoursEnd}
+              onChange={(e) => handleWorkHoursChange("end", e.target.value)}
+              className="w-full bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
+            />
+            <SaveIndicator show={savedFields.workHoursEnd} />
+          </div>
         </div>
       </div>
 
@@ -175,23 +231,29 @@ const SettingsScheduling = () => {
           <span>Focus / Deep Work Hours</span>
         </div>
         <div className="flex items-center gap-3">
-          <input
-            type="time"
-            value={settings.focusHoursStart}
-            onChange={(e) => handleFocusHoursChange("start", e.target.value)}
-            min={settings.workHoursStart}
-            max={settings.workHoursEnd}
-            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
-          />
+          <div className="relative flex-1">
+            <input
+              type="time"
+              value={settings.focusHoursStart}
+              onChange={(e) => handleFocusHoursChange("start", e.target.value)}
+              min={settings.workHoursStart}
+              max={settings.workHoursEnd}
+              className="w-full bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
+            />
+            <SaveIndicator show={savedFields.focusHoursStart} />
+          </div>
           <span className="text-muted-foreground text-sm">to</span>
-          <input
-            type="time"
-            value={settings.focusHoursEnd}
-            onChange={(e) => handleFocusHoursChange("end", e.target.value)}
-            min={settings.workHoursStart}
-            max={settings.workHoursEnd}
-            className="flex-1 bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
-          />
+          <div className="relative flex-1">
+            <input
+              type="time"
+              value={settings.focusHoursEnd}
+              onChange={(e) => handleFocusHoursChange("end", e.target.value)}
+              min={settings.workHoursStart}
+              max={settings.workHoursEnd}
+              className="w-full bg-muted/50 border border-border/30 rounded-lg px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-cosmic-silver/50 transition-all cursor-pointer appearance-none [color-scheme:dark]"
+            />
+            <SaveIndicator show={savedFields.focusHoursEnd} />
+          </div>
         </div>
         <p className="text-xs text-muted-foreground/70">
           Must be within working hours
@@ -211,10 +273,13 @@ const SettingsScheduling = () => {
             </p>
           </div>
         </div>
-        <Switch
-          checked={settings.autoCarryTasks}
-          onCheckedChange={handleAutoCarryChange}
-        />
+        <div className="relative">
+          <Switch
+            checked={settings.autoCarryTasks}
+            onCheckedChange={handleAutoCarryChange}
+          />
+          <SaveIndicator show={savedFields.autoCarryTasks} />
+        </div>
       </div>
     </div>
   );
