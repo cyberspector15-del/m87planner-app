@@ -1,7 +1,18 @@
 import { useEffect, useRef, useCallback } from "react";
 import confetti from "canvas-confetti";
+import { toast } from "sonner";
 
 const MILESTONES = [7, 14, 30, 60, 90, 100, 365];
+
+const getMilestoneMessage = (streak: number): { title: string; description: string } => {
+  if (streak >= 365) return { title: "🏆 LEGENDARY!", description: `${streak} days of cosmic consistency!` };
+  if (streak >= 100) return { title: "🌟 Unstoppable!", description: `${streak}-day streak! You're a force of nature!` };
+  if (streak >= 90) return { title: "🚀 Incredible!", description: `${streak} days strong! Quarter-year champion!` };
+  if (streak >= 60) return { title: "✨ Amazing!", description: `${streak}-day streak! Two months of excellence!` };
+  if (streak >= 30) return { title: "🔥 On Fire!", description: `${streak} days! A full month of focus!` };
+  if (streak >= 14) return { title: "💪 Two Weeks Strong!", description: `${streak}-day streak! Building real momentum!` };
+  return { title: "🎉 First Milestone!", description: `${streak}-day streak unlocked! Keep going!` };
+};
 const STORAGE_KEY = "m87-last-celebrated-streak";
 
 export const useStreakConfetti = (currentStreak: number | undefined) => {
@@ -72,6 +83,15 @@ export const useStreakConfetti = (currentStreak: number | undefined) => {
       hasTriggeredRef.current = true;
       localStorage.setItem(STORAGE_KEY, currentStreak.toString());
       fireConfetti();
+      
+      // Show toast notification
+      const message = getMilestoneMessage(currentStreak);
+      toast(message.title, {
+        description: message.description,
+        duration: 5000,
+        icon: "🔥",
+      });
+      
       return true;
     }
 
