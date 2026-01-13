@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, Clock, Target, Zap, TrendingUp, X, Flame, Calendar } from "lucide-react";
+import { CheckCircle2, Clock, Target, Zap, TrendingUp, X, Flame, Calendar, PartyPopper } from "lucide-react";
 import { useQuickStats } from "@/hooks/useQuickStats";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,6 +9,7 @@ import { format, isToday, parseISO, startOfDay, endOfDay, subDays } from "date-f
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useHaptic } from "@/hooks/useHaptic";
+import { useStreakConfetti } from "@/hooks/useStreakConfetti";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ const QuickStats = () => {
   const { data: stats, isLoading } = useQuickStats();
   const { data: weeklyData, isLoading: weeklyLoading } = useWeeklyProgress();
   const { vibrate } = useHaptic();
+  const { isMilestone, currentMilestone, nextMilestone, fireConfetti } = useStreakConfetti(stats?.streak);
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -438,16 +440,45 @@ const QuickStats = () => {
                     <p className="text-sm text-muted-foreground">Last 30 days activity</p>
                   </div>
                 </div>
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/30"
-                >
-                  <Flame className="w-4 h-4 text-amber-400" />
-                  <span className="font-display text-2xl font-bold text-amber-400">{stats?.streak || 0}</span>
-                  <span className="text-sm text-muted-foreground">day streak</span>
-                </motion.div>
+                <div className="flex items-center gap-3 mt-4 flex-wrap">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/30"
+                  >
+                    <Flame className="w-4 h-4 text-amber-400" />
+                    <span className="font-display text-2xl font-bold text-amber-400">{stats?.streak || 0}</span>
+                    <span className="text-sm text-muted-foreground">day streak</span>
+                  </motion.div>
+                  
+                  {isMilestone && currentMilestone && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4, type: "spring", stiffness: 200 }}
+                      onClick={() => {
+                        vibrate("medium");
+                        fireConfetti();
+                      }}
+                      className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-gradient-to-r from-amber-500/30 to-orange-500/30 border border-amber-400/50 hover:border-amber-400 transition-colors"
+                    >
+                      <PartyPopper className="w-4 h-4 text-amber-300" />
+                      <span className="text-sm font-medium text-amber-300">🎉 {currentMilestone}-day milestone!</span>
+                    </motion.button>
+                  )}
+                </div>
+                
+                {nextMilestone && !isMilestone && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.5 }}
+                    className="text-xs text-muted-foreground mt-3"
+                  >
+                    {nextMilestone - (stats?.streak || 0)} days until your next milestone ({nextMilestone} days) 🔥
+                  </motion.p>
+                )}
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
                 {streakLoading ? (
