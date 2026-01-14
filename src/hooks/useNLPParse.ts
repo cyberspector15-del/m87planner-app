@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAIUsage } from "@/hooks/useAIUsage";
 
 interface NLPResult {
   action: string;
@@ -16,15 +17,24 @@ export const useNLPParse = () => {
   const [isParsing, setIsParsing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { tryIncrementUsage } = useAIUsage();
 
-  const parseCommand = async (input: string): Promise<NLPResult | null> => {
+  const parseCommand = async (input: string, skipUsageCheck = false): Promise<{ result: NLPResult | null; limitReached?: boolean }> => {
     if (!input.trim()) {
       toast({
         title: "Empty command",
         description: "Please enter a command.",
         variant: "destructive",
       });
-      return null;
+      return { result: null };
+    }
+
+    // Check usage limits (unless skipped for onboarding)
+    if (!skipUsageCheck) {
+      const incrementResult = await tryIncrementUsage();
+      if (incrementResult && !incrementResult.allowed) {
+        return { result: null, limitReached: true };
+      }
     }
 
     setIsParsing(true);
@@ -38,7 +48,7 @@ export const useNLPParse = () => {
           description: "Please sign in to use AI commands.",
           variant: "destructive",
         });
-        return null;
+        return { result: null };
       }
 
       const response = await supabase.functions.invoke("nlp-parse", {
@@ -57,7 +67,7 @@ export const useNLPParse = () => {
           description: "Please try rephrasing your command.",
           variant: "destructive",
         });
-        return result;
+        return { result };
       }
 
       if (result.action === "plan_day") {
@@ -65,7 +75,7 @@ export const useNLPParse = () => {
           title: "Planning your day",
           description: "Use the Auto Plan button to schedule your tasks.",
         });
-        return result;
+        return { result };
       }
 
       const tasksCreated = result.created?.tasks?.length || 0;
@@ -87,7 +97,7 @@ export const useNLPParse = () => {
         });
       }
 
-      return result;
+      return { result };
     } catch (error) {
       console.error("NLP parse error:", error);
       
@@ -113,7 +123,7 @@ export const useNLPParse = () => {
         });
       }
       
-      return null;
+      return { result: null };
     } finally {
       setIsParsing(false);
     }

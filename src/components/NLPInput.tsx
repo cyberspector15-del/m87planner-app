@@ -20,7 +20,12 @@ const NLPInput = () => {
   const handleSubmit = async () => {
     if (!input.trim() || isParsing) return;
     
-    const result = await parseCommand(input);
+    const { result, limitReached } = await parseCommand(input);
+    
+    if (limitReached) {
+      // Handle upgrade prompt here if needed
+      return;
+    }
     
     if (result && result.action !== "unknown") {
       setLastSuccess(true);
