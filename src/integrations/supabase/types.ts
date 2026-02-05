@@ -114,13 +114,10 @@ export type Database = {
       }
       profiles: {
         Row: {
-          ai_commands_reset_date: string | null
-          ai_commands_used_today: number | null
           ai_strictness: string | null
           ask_before_reschedule: boolean | null
           auto_carry_tasks: boolean | null
           commute_tolerance_minutes: number | null
-          conversation_mode_enabled: boolean | null
           created_at: string
           email: string | null
           focus_hours_end: string | null
@@ -133,7 +130,6 @@ export type Database = {
           reminder_minutes: number | null
           show_ai_explanations: boolean | null
           sound_enabled: boolean | null
-          subscription_tier: string | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -141,13 +137,10 @@ export type Database = {
           work_hours_start: string | null
         }
         Insert: {
-          ai_commands_reset_date?: string | null
-          ai_commands_used_today?: number | null
           ai_strictness?: string | null
           ask_before_reschedule?: boolean | null
           auto_carry_tasks?: boolean | null
           commute_tolerance_minutes?: number | null
-          conversation_mode_enabled?: boolean | null
           created_at?: string
           email?: string | null
           focus_hours_end?: string | null
@@ -160,7 +153,6 @@ export type Database = {
           reminder_minutes?: number | null
           show_ai_explanations?: boolean | null
           sound_enabled?: boolean | null
-          subscription_tier?: string | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -168,13 +160,10 @@ export type Database = {
           work_hours_start?: string | null
         }
         Update: {
-          ai_commands_reset_date?: string | null
-          ai_commands_used_today?: number | null
           ai_strictness?: string | null
           ask_before_reschedule?: boolean | null
           auto_carry_tasks?: boolean | null
           commute_tolerance_minutes?: number | null
-          conversation_mode_enabled?: boolean | null
           created_at?: string
           email?: string | null
           focus_hours_end?: string | null
@@ -187,7 +176,6 @@ export type Database = {
           reminder_minutes?: number | null
           show_ai_explanations?: boolean | null
           sound_enabled?: boolean | null
-          subscription_tier?: string | null
           timezone?: string | null
           updated_at?: string
           user_id?: string
@@ -315,8 +303,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_ai_usage_status: { Args: { p_user_id: string }; Returns: Json }
-      increment_ai_usage: { Args: { p_user_id: string }; Returns: Json }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never

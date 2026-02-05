@@ -214,12 +214,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
     if (!input.trim() || isParsing) return;
     
     const command = input.trim();
-    const { result, limitReached } = await parseCommand(command);
-    
-    if (limitReached) {
-      // Show upgrade modal for limit reached
-      return;
-    }
+    const result = await parseCommand(command);
     
     if (result && result.action !== "unknown") {
       addToHistory(command);

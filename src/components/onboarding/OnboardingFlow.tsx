@@ -33,9 +33,9 @@ const OnboardingFlow = ({ isVisible, onComplete }: OnboardingFlowProps) => {
   const handleTutorialSubmit = useCallback(async (command: string) => {
     setStep("processing");
     
-    // Actually process the command (skip usage check during onboarding)
+    // Actually process the command
     try {
-      await parseCommand(command, true);
+      await parseCommand(command);
     } catch (e) {
       console.error("Onboarding command error:", e);
     }
