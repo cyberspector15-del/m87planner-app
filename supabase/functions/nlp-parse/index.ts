@@ -6,6 +6,17 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// System prompts for different modes
+const SILENT_SYSTEM_PROMPT = `You are an AI assistant for M87 Planner that interprets natural language commands to create tasks and events.
+You execute commands directly without asking follow-up questions.
+Always try to infer reasonable defaults when information is missing.`;
+
+const CONVERSATIONAL_SYSTEM_PROMPT = `You are an AI assistant for M87 Planner that helps users plan their day through conversation.
+You can ask clarifying questions to better understand the user's needs.
+When you need more information, respond with a question and set needsMoreInfo to true.
+When you have enough information, create the tasks/events and set needsMoreInfo to false.
+Be concise and helpful. Keep responses under 100 words.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -35,7 +46,7 @@ serve(async (req) => {
       });
     }
 
-    const { input } = await req.json();
+    const { input, mode = "silent", conversationContext } = await req.json();
     
     if (!input || typeof input !== "string" || input.trim().length === 0) {
       return new Response(JSON.stringify({ error: "Input is required" }), {
@@ -47,19 +58,25 @@ serve(async (req) => {
     // Limit input length for security
     const sanitizedInput = input.trim().slice(0, 500);
     
-    console.log(`Processing NLP input for user ${user.id}: "${sanitizedInput}"`);
+    console.log(`Processing NLP input for user ${user.id} in ${mode} mode: "${sanitizedInput}"`);
 
     const today = new Date();
-    const prompt = `You are an AI assistant for M87 Planner that interprets natural language commands to create tasks and events.
-
-Current date: ${today.toDateString()}
+    const isConversational = mode === "conversational";
+    
+    // Build the prompt based on mode
+    const basePrompt = `Current date: ${today.toDateString()}
 User timezone: Consider standard working hours (9 AM - 5 PM)
 
 User command: "${sanitizedInput}"
 
+${isConversational ? `If you need more information to create a complete plan, ask a clarifying question and set needsMoreInfo to true.
+If you have enough information, create the tasks and set needsMoreInfo to false.` : ''}
+
 Interpret this command and return a JSON object with the following structure:
 {
-  "action": "create_task" | "create_tasks" | "create_routine" | "plan_day" | "clear_schedule" | "unknown",
+  "action": "create_task" | "create_tasks" | "create_routine" | "plan_day" | "clear_schedule" | "unknown"${isConversational ? ' | "clarify"' : ''},
+  "needsMoreInfo": ${isConversational ? 'true | false' : 'false'},
+  "followUpQuestion": "${isConversational ? 'question to ask user (if needsMoreInfo is true)' : ''}",
   "tasks": [
     {
       "title": "task title",
@@ -93,6 +110,7 @@ Rules for interpretation:
 7. Priority: "urgent", "important", "high" → 1, default → 2, "low" → 3
 8. Duration defaults: exercise 60min, meetings 30min, focus time as specified
 9. If creating multiple tasks from one command, use "create_tasks"
+${isConversational ? '10. For vague requests like "I want to be more productive", ask clarifying questions first' : ''}
 
 Return ONLY valid JSON, no markdown formatting.`;
 
@@ -101,7 +119,25 @@ Return ONLY valid JSON, no markdown formatting.`;
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Calling Lovable AI for NLP parsing...");
+    console.log(`Calling Lovable AI for NLP parsing in ${mode} mode...`);
+
+    // Build messages array - include conversation context if in conversational mode
+    const messages: Array<{ role: string; content: string }> = [
+      { 
+        role: "system", 
+        content: isConversational ? CONVERSATIONAL_SYSTEM_PROMPT : SILENT_SYSTEM_PROMPT 
+      },
+    ];
+
+    // Add conversation history if available
+    if (isConversational && conversationContext?.messages) {
+      for (const msg of conversationContext.messages) {
+        messages.push({ role: msg.role, content: msg.content });
+      }
+    }
+
+    // Add the current user message with full prompt
+    messages.push({ role: "user", content: basePrompt });
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -111,11 +147,8 @@ Return ONLY valid JSON, no markdown formatting.`;
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: "You are a precise NLP parser. Always respond with valid JSON only." },
-          { role: "user", content: prompt },
-        ],
-        temperature: 0.2,
+        messages,
+        temperature: isConversational ? 0.4 : 0.2,
       }),
     });
 
@@ -165,11 +198,21 @@ Return ONLY valid JSON, no markdown formatting.`;
     const results = {
       action: parsed.action,
       message: parsed.message || "Command processed",
+      needsMoreInfo: parsed.needsMoreInfo || false,
+      followUpQuestion: parsed.followUpQuestion || null,
       created: {
         tasks: [] as any[],
         routines: [] as any[],
       }
     };
+
+    // If in conversational mode and needs more info, don't create anything yet
+    if (isConversational && parsed.needsMoreInfo) {
+      console.log("Conversational mode: AI needs more information");
+      return new Response(JSON.stringify(results), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Handle task creation
     if ((parsed.action === "create_task" || parsed.action === "create_tasks") && parsed.tasks?.length > 0) {

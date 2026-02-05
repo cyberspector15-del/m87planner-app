@@ -6,6 +6,10 @@ import { cn } from "@/lib/utils";
 import { useNLPParse } from "@/hooks/useNLPParse";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCosmicSounds } from "@/hooks/useCosmicSounds";
+import { useAIUsage } from "@/hooks/useAIUsage";
+import AIUsageIndicator from "@/components/ai/AIUsageIndicator";
+import ConversationModeToggle from "@/components/ai/ConversationModeToggle";
+import UpgradeModal from "@/components/ai/UpgradeModal";
 
 const suggestions = [
   "Plan my day",
@@ -34,6 +38,11 @@ const SpeechRecognition = typeof window !== "undefined"
   ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
   : null;
 
+interface ConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
 const CommandCenter = ({ className }: CommandCenterProps) => {
   const [input, setInput] = useState("");
   const [isSpotlightActive, setIsSpotlightActive] = useState(false);
@@ -44,9 +53,29 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
   const [tempInput, setTempInput] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
+  
+  // AI usage and upgrade modal state
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<"limit_reached" | "conversation_mode">("limit_reached");
+  
+  // Conversation mode state
+  const [conversationMessages, setConversationMessages] = useState<ConversationMessage[]>([]);
+  const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  
   const { parseCommand, isParsing } = useNLPParse();
   const { vibrate } = useHaptic();
   const { playVoiceConfirm } = useCosmicSounds();
+  const {
+    used,
+    limit,
+    tier,
+    isPro,
+    isLimitReached,
+    conversationModeEnabled,
+    toggleConversationMode,
+    refetch: refetchUsage,
+  } = useAIUsage();
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -107,7 +136,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
         }
       }
     };
-  }, [vibrate]);
+  }, [vibrate, playVoiceConfirm]);
 
   // Load command history from localStorage
   useEffect(() => {
@@ -161,6 +190,8 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
         setIsSpotlightActive(false);
         setHistoryIndex(-1);
         setTempInput("");
+        setPendingQuestion(null);
+        setConversationMessages([]);
         // Stop listening if active
         if (isListening && recognitionRef.current) {
           recognitionRef.current.stop();
@@ -179,6 +210,8 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
         setIsSpotlightActive(false);
         setHistoryIndex(-1);
         setTempInput("");
+        setPendingQuestion(null);
+        setConversationMessages([]);
         // Stop listening if active
         if (isListening && recognitionRef.current) {
           recognitionRef.current.stop();
@@ -210,25 +243,74 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
     });
   }, []);
 
+  const handleConversationModeClick = useCallback(() => {
+    if (!isPro) {
+      setUpgradeReason("conversation_mode");
+      setShowUpgradeModal(true);
+      return;
+    }
+    toggleConversationMode();
+  }, [isPro, toggleConversationMode]);
+
   const handleSubmit = useCallback(async () => {
     if (!input.trim() || isParsing) return;
+
+    // Check if limit is reached before attempting
+    if (isLimitReached) {
+      setUpgradeReason("limit_reached");
+      setShowUpgradeModal(true);
+      return;
+    }
     
     const command = input.trim();
-    const result = await parseCommand(command);
     
-    if (result && result.action !== "unknown") {
+    // Build conversation context if in conversation mode
+    const context = conversationModeEnabled && isPro && conversationMessages.length > 0
+      ? { messages: conversationMessages }
+      : undefined;
+    
+    const result = await parseCommand(command, context);
+    
+    if (!result) return;
+
+    // Handle limit reached response
+    if (result.action === "limit_reached") {
+      setUpgradeReason("limit_reached");
+      setShowUpgradeModal(true);
+      refetchUsage();
+      return;
+    }
+
+    // Handle conversational follow-up
+    if (result.needsMoreInfo && result.followUpQuestion) {
+      // Add user message and AI question to conversation
+      setConversationMessages(prev => [
+        ...prev,
+        { role: "user", content: command },
+        { role: "assistant", content: result.followUpQuestion! },
+      ]);
+      setPendingQuestion(result.followUpQuestion);
+      setInput("");
+      vibrate("light");
+      return;
+    }
+    
+    if (result.action !== "unknown") {
       addToHistory(command);
       setLastSuccess(true);
       setInput("");
       setHistoryIndex(-1);
       setTempInput("");
+      setPendingQuestion(null);
+      setConversationMessages([]);
       vibrate("success");
+      refetchUsage();
       setTimeout(() => {
         setLastSuccess(false);
         setIsSpotlightActive(false);
       }, 1500);
     }
-  }, [input, isParsing, parseCommand, vibrate, addToHistory]);
+  }, [input, isParsing, parseCommand, vibrate, addToHistory, isLimitReached, conversationModeEnabled, isPro, conversationMessages, refetchUsage]);
 
   const handleSuggestionClick = (suggestion: string) => {
     setInput(suggestion);
@@ -298,6 +380,15 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
 
   return (
     <>
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        reason={upgradeReason}
+        currentUsage={used}
+        limit={limit}
+      />
+
       {/* Spotlight Overlay - dims background */}
       <AnimatePresence>
         {isSpotlightActive && (
@@ -333,7 +424,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
           )}
           style={{
             boxShadow: isSpotlightActive
-              ? "0 0 60px 10px hsl(var(--cosmic-silver) / 0.15), 0 0 100px 30px hsl(var(--cosmic-teal) / 0.08), inset 0 1px 0 0 hsl(var(--cosmic-silver) / 0.1)"
+              ? "0 0 60px 10px hsl(var(--cosmic-silver) / 0.15), 0 0 100px 30px hsl(var(--cosmic-accent-teal) / 0.08), inset 0 1px 0 0 hsl(var(--cosmic-silver) / 0.1)"
               : "0 0 30px 5px hsl(var(--cosmic-silver) / 0.05)"
           }}
         >
@@ -358,7 +449,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                 className="absolute inset-0 rounded-2xl pointer-events-none"
                 style={{
                   border: "1px solid hsl(var(--cosmic-silver) / 0.2)",
-                  boxShadow: "inset 0 0 30px 5px hsl(var(--cosmic-teal) / 0.05)"
+                  boxShadow: "inset 0 0 30px 5px hsl(var(--cosmic-accent-teal) / 0.05)"
                 }}
               />
             )}
@@ -408,6 +499,45 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
               </motion.div>
             </div>
 
+            {/* AI Usage & Conversation Mode Row */}
+            <AnimatePresence>
+              {isSpotlightActive && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="flex items-center justify-between gap-3 mb-4"
+                >
+                  <AIUsageIndicator
+                    used={used}
+                    limit={limit}
+                    tier={tier}
+                  />
+                  <ConversationModeToggle
+                    enabled={conversationModeEnabled}
+                    isPro={isPro}
+                    onToggle={toggleConversationMode}
+                    onProClick={handleConversationModeClick}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Conversation thread (if in conversation mode with pending question) */}
+            <AnimatePresence>
+              {pendingQuestion && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="mb-4 p-3 rounded-xl bg-cosmic-teal/10 border border-cosmic-teal/30"
+                >
+                  <p className="text-sm text-cosmic-teal font-medium mb-1">M87 asks:</p>
+                  <p className="text-sm text-foreground">{pendingQuestion}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Input Field */}
             <div className="relative">
               {/* History indicator */}
@@ -433,7 +563,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                 onChange={handleInputChange}
                 onFocus={handleFocus}
                 onKeyDown={handleKeyDown}
-                placeholder={placeholders[placeholderIndex]}
+                placeholder={pendingQuestion ? "Type your reply..." : placeholders[placeholderIndex]}
                 className={cn(
                   "w-full bg-muted/30 border rounded-xl text-foreground placeholder:text-muted-foreground/70 focus:outline-none transition-all duration-300",
                   isSpotlightActive 

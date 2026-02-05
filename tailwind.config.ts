@@ -60,6 +60,7 @@ export default {
           "silver-bright": "hsl(var(--cosmic-silver-bright))",
           glow: "hsl(var(--cosmic-glow))",
           teal: "hsl(var(--cosmic-accent-teal))",
+          gold: "hsl(var(--cosmic-gold))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
