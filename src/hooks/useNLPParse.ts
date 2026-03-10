@@ -20,13 +20,13 @@ export const useNLPParse = () => {
   const [isParsing, setIsParsing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { 
-    checkAndIncrementUsage, 
-    isLimitReached, 
-    used, 
-    limit, 
+  const {
+    checkAndIncrementUsage,
+    isLimitReached,
+    used,
+    limit,
     conversationModeEnabled,
-    isPro 
+    isPro
   } = useAIUsage();
 
   const parseCommand = useCallback(async (
@@ -55,7 +55,7 @@ export const useNLPParse = () => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         toast({
           title: "Not authenticated",
@@ -67,7 +67,7 @@ export const useNLPParse = () => {
 
       // Check and increment usage before making the AI call
       const usageResult = await checkAndIncrementUsage();
-      
+
       if (!usageResult.allowed) {
         return {
           action: "limit_reached",
@@ -79,11 +79,19 @@ export const useNLPParse = () => {
       // Determine mode to use
       const mode = conversationModeEnabled && isPro ? "conversational" : "silent";
 
-      const response = await supabase.functions.invoke("nlp-parse", {
-        body: { 
-          input,
+      // Use the new AI Gateway
+      const response = await supabase.functions.invoke("ai-gateway", {
+        body: {
+          userId: session.user.id,
           mode,
-          conversationContext: mode === "conversational" ? conversationContext : undefined,
+          messages: [
+            ...(conversationContext?.messages || []),
+            { role: "user", content: input }
+          ],
+          metadata: {
+            type: "nlp-parse",
+            isPro,
+          }
         },
       });
 
@@ -91,7 +99,22 @@ export const useNLPParse = () => {
         throw new Error(response.error.message);
       }
 
-      const result = response.data as NLPResult;
+      const aiResponseText = response.data.content;
+
+      // Parse the JSON content from the AI response
+      let result: NLPResult;
+      try {
+        // Clean up markdown code blocks if present
+        const jsonString = aiResponseText.replace(/```json\n?|\n?```/g, "").trim();
+        result = JSON.parse(jsonString);
+      } catch (e) {
+        console.error("Failed to parse AI response:", e);
+        return {
+          action: "unknown",
+          message: "I couldn't understand that response. Please try again.",
+          created: { tasks: [], routines: [] }
+        };
+      }
 
       if (result.action === "unknown") {
         toast({
@@ -138,9 +161,9 @@ export const useNLPParse = () => {
       return result;
     } catch (error) {
       console.error("NLP parse error:", error);
-      
+
       const errorMessage = error instanceof Error ? error.message : "Failed to process command";
-      
+
       if (errorMessage.includes("429") || errorMessage.includes("Rate limit")) {
         toast({
           title: "Rate limit exceeded",
@@ -160,15 +183,15 @@ export const useNLPParse = () => {
           variant: "destructive",
         });
       }
-      
+
       return null;
     } finally {
       setIsParsing(false);
     }
   }, [toast, queryClient, checkAndIncrementUsage, isLimitReached, limit, conversationModeEnabled, isPro]);
 
-  return { 
-    parseCommand, 
+  return {
+    parseCommand,
     isParsing,
     isLimitReached,
     used,

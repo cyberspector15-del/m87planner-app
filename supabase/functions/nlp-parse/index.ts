@@ -1,6 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+/**
+ * ⚠️ MIGRATION REQUIRED: This edge function uses Lovable's AI Gateway
+ * 
+ * To use this function with your own Supabase instance, you need to:
+ * 1. Replace LOVABLE_API_KEY with your own AI provider (OpenAI, Anthropic, etc.)
+ * 2. Update the API endpoint (currently: https://ai.gateway.lovable.dev/v1/chat/completions)
+ * 3. See /supabase/EDGE_FUNCTIONS_MIGRATION.md for detailed instructions
+ */
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -37,7 +46,7 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+
     if (authError || !user) {
       console.error("Auth error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -47,7 +56,7 @@ serve(async (req) => {
     }
 
     const { input, mode = "silent", conversationContext } = await req.json();
-    
+
     if (!input || typeof input !== "string" || input.trim().length === 0) {
       return new Response(JSON.stringify({ error: "Input is required" }), {
         status: 400,
@@ -57,12 +66,12 @@ serve(async (req) => {
 
     // Limit input length for security
     const sanitizedInput = input.trim().slice(0, 500);
-    
+
     console.log(`Processing NLP input for user ${user.id} in ${mode} mode: "${sanitizedInput}"`);
 
     const today = new Date();
     const isConversational = mode === "conversational";
-    
+
     // Build the prompt based on mode
     const basePrompt = `Current date: ${today.toDateString()}
 User timezone: Consider standard working hours (9 AM - 5 PM)
@@ -123,9 +132,9 @@ Return ONLY valid JSON, no markdown formatting.`;
 
     // Build messages array - include conversation context if in conversational mode
     const messages: Array<{ role: string; content: string }> = [
-      { 
-        role: "system", 
-        content: isConversational ? CONVERSATIONAL_SYSTEM_PROMPT : SILENT_SYSTEM_PROMPT 
+      {
+        role: "system",
+        content: isConversational ? CONVERSATIONAL_SYSTEM_PROMPT : SILENT_SYSTEM_PROMPT
       },
     ];
 
@@ -155,7 +164,7 @@ Return ONLY valid JSON, no markdown formatting.`;
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error("AI gateway error:", aiResponse.status, errorText);
-      
+
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
@@ -173,7 +182,7 @@ Return ONLY valid JSON, no markdown formatting.`;
 
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "{}";
-    
+
     console.log("AI NLP response:", aiContent);
 
     // Parse AI response
@@ -186,7 +195,7 @@ Return ONLY valid JSON, no markdown formatting.`;
       parsed = JSON.parse(jsonContent);
     } catch (parseError) {
       console.error("Failed to parse AI response:", parseError);
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: "Failed to understand the command. Please try rephrasing.",
         action: "unknown"
       }), {
@@ -270,7 +279,7 @@ Return ONLY valid JSON, no markdown formatting.`;
           for (let i = 0; i < daysToAdd; i++) {
             const taskDate = new Date(today);
             taskDate.setDate(today.getDate() + i + 1);
-            
+
             const { data: taskFromRoutine, error: taskError } = await supabase
               .from("tasks")
               .insert({

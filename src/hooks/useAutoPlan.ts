@@ -26,7 +26,7 @@ export const useAutoPlan = () => {
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
         toast({
           title: "Not authenticated",
@@ -36,15 +36,36 @@ export const useAutoPlan = () => {
         return null;
       }
 
-      const response = await supabase.functions.invoke("auto-plan", {
-        body: { date: date.toISOString() },
+      // Prepare prompt for Auto-Plan
+      const prompt = `Plan my day for ${date.toDateString()}.`;
+
+      const response = await supabase.functions.invoke("ai-gateway", {
+        body: {
+          userId: session.user.id,
+          mode: "silent",
+          messages: [{ role: "user", content: prompt }],
+          metadata: {
+            type: "auto-plan",
+            date: date.toISOString()
+          }
+        },
       });
 
       if (response.error) {
         throw new Error(response.error.message);
       }
 
-      const result = response.data as AutoPlanResult;
+      const aiResponseText = response.data.content;
+
+      // Parse the JSON content from the AI response
+      let result: AutoPlanResult;
+      try {
+        const jsonString = aiResponseText.replace(/```json\n?|\n?```/g, "").trim();
+        result = JSON.parse(jsonString);
+      } catch (e) {
+        console.error("Failed to parse AI response:", e);
+        throw new Error("Invalid response from AI planner");
+      }
 
       if (result.scheduled && result.scheduled.length > 0) {
         toast({
@@ -64,9 +85,9 @@ export const useAutoPlan = () => {
       return result;
     } catch (error) {
       console.error("Auto-plan error:", error);
-      
+
       const errorMessage = error instanceof Error ? error.message : "Failed to auto-plan";
-      
+
       if (errorMessage.includes("429") || errorMessage.includes("Rate limit")) {
         toast({
           title: "Rate limit exceeded",
@@ -86,7 +107,7 @@ export const useAutoPlan = () => {
           variant: "destructive",
         });
       }
-      
+
       return null;
     } finally {
       setIsPlanning(false);

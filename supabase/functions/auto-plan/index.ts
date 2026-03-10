@@ -1,5 +1,15 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+/**
+ * ⚠️ MIGRATION REQUIRED: This edge function uses Lovable's AI Gateway
+ * 
+ * To use this function with your own Supabase instance, you need to:
+ * 1. Replace LOVABLE_API_KEY with your own AI provider (OpenAI, Anthropic, etc.)
+ * 2. Update the API endpoint (currently: https://ai.gateway.lovable.dev/v1/chat/completions)
+ * 3. See /supabase/EDGE_FUNCTIONS_MIGRATION.md for detailed instructions
+ */
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -27,7 +37,7 @@ serve(async (req) => {
     // Get user from auth header
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
+
     if (authError || !user) {
       console.error("Auth error:", authError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -95,9 +105,9 @@ serve(async (req) => {
     console.log(`User settings: work=${workStart}-${workEnd}, focus=${focusStart}-${focusEnd}, strictness=${aiStrictness}`);
 
     if (!tasks || tasks.length === 0) {
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         message: "No tasks to schedule",
-        scheduled: [] 
+        scheduled: []
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -219,7 +229,7 @@ Only schedule tasks that fit within available slots. If a task cannot be schedul
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error("AI gateway error:", aiResponse.status, errorText);
-      
+
       if (aiResponse.status === 429) {
         return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again later." }), {
           status: 429,
@@ -237,7 +247,7 @@ Only schedule tasks that fit within available slots. If a task cannot be schedul
 
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content || "[]";
-    
+
     console.log("AI response:", aiContent);
 
     // Parse AI response - handle potential markdown wrapping
@@ -250,9 +260,9 @@ Only schedule tasks that fit within available slots. If a task cannot be schedul
       scheduledTasks = JSON.parse(jsonContent);
     } catch (parseError) {
       console.error("Failed to parse AI response:", parseError);
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         error: "Failed to parse AI scheduling response",
-        scheduled: [] 
+        scheduled: []
       }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -292,9 +302,9 @@ Only schedule tasks that fit within available slots. If a task cannot be schedul
 
     console.log(`Created ${createdEvents.length} events`);
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       message: `Successfully scheduled ${createdEvents.length} task(s)`,
-      scheduled: createdEvents 
+      scheduled: createdEvents
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
