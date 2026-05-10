@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Clock, Flag, MoreHorizontal, Pencil, Trash2, Check, MapPin, Loader2 } from 'lucide-react';
+import { Plus, Clock, Flag, DotsThree, PencilSimple, Trash, Check, MapPin, CircleNotch } from "@phosphor-icons/react";
 import { format, isToday, isTomorrow, isPast } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import {
@@ -106,7 +106,7 @@ const TaskList = () => {
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <Flag className={cn('w-3 h-3', priority.color)} />
+              <Flag size={12} weight="thin" className={priority.color} />
               <span className="text-xs text-muted-foreground">
                 {task.flexible ? 'Flexible' : 'Fixed'}
               </span>
@@ -126,12 +126,12 @@ const TaskList = () => {
             )}
             <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+                <Clock size={12} weight="thin" />
                 {task.duration_minutes}min
               </span>
               {task.location && (
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
+                  <MapPin size={12} weight="thin" />
                   <span className="truncate max-w-[100px]">{task.location}</span>
                 </span>
               )}
@@ -156,16 +156,16 @@ const TaskList = () => {
                 size="icon"
                 className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
               >
-                <MoreHorizontal className="w-4 h-4" />
+                <DotsThree size={16} weight="thin" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="glass-strong border-border/50">
               <DropdownMenuItem onClick={() => handleToggleComplete(task)}>
-                <Check className="w-4 h-4 mr-2" />
+                <Check size={16} weight="thin" className="mr-2" />
                 {task.completed ? 'Mark incomplete' : 'Mark complete'}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEdit(task)}>
-                <Pencil className="w-4 h-4 mr-2" />
+                <PencilSimple size={16} weight="thin" className="mr-2" />
                 Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -173,7 +173,7 @@ const TaskList = () => {
                 onClick={() => handleDelete(task)}
                 className="text-red-400 focus:text-red-400"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
+                <Trash size={16} weight="thin" className="mr-2" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -202,7 +202,7 @@ const TaskList = () => {
               className="gap-1"
               onClick={() => setDialogOpen(true)}
             >
-              <Plus className="w-4 h-4" />
+              <Plus size={16} weight="thin" />
               Add Task
             </Button>
           </div>
@@ -211,7 +211,7 @@ const TaskList = () => {
         <div className="divide-y divide-border/30 cosmic-scrollbar max-h-[400px] overflow-y-auto">
           {isLoading ? (
             <div className="p-8 flex items-center justify-center">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              <CircleNotch size={24} weight="thin" className="animate-spin text-muted-foreground" />
             </div>
           ) : error ? (
             <div className="p-8 text-center text-muted-foreground">

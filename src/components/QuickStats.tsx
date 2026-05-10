@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle2, Clock, Target, Zap, TrendingUp, X, Flame, Calendar, PartyPopper } from "lucide-react";
+import { CheckCircle, Clock, Target, TrendUp, X, Flame, Calendar, Confetti } from "@phosphor-icons/react";
 import { useQuickStats } from "@/hooks/useQuickStats";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,7 +31,8 @@ const QuickStats = () => {
   const { data: todayTasks, isLoading: todayTasksLoading } = useQuery({
     queryKey: ["today-completed-tasks"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
 
       const today = new Date();
@@ -52,11 +53,12 @@ const QuickStats = () => {
     enabled: activeModal === "completed",
   });
 
-  // Fetch today's events for focus time
-  const { data: todayEvents, isLoading: eventsLoading } = useQuery({
-    queryKey: ["today-focus-events"],
+  // Fetch today's focus sessions
+  const { data: todaySessions, isLoading: sessionsLoading } = useQuery({
+    queryKey: ["today-focus-sessions"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const user = authSession?.user;
       if (!user) return [];
 
       const today = new Date();
@@ -64,12 +66,13 @@ const QuickStats = () => {
       const dayEnd = endOfDay(today).toISOString();
 
       const { data } = await supabase
-        .from("events")
+        .from("focus_sessions")
         .select("*")
         .eq("user_id", user.id)
-        .gte("start_time", dayStart)
-        .lte("end_time", dayEnd)
-        .order("start_time", { ascending: true });
+        .gt("focus_minutes_completed", 0)
+        .gte("created_at", dayStart)
+        .lte("created_at", dayEnd)
+        .order("created_at", { ascending: true });
 
       return data || [];
     },
@@ -80,7 +83,8 @@ const QuickStats = () => {
   const { data: streakData, isLoading: streakLoading } = useQuery({
     queryKey: ["streak-calendar"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
 
       const today = new Date();
@@ -123,7 +127,8 @@ const QuickStats = () => {
     queryKey: ["day-completed-tasks", selectedDate],
     queryFn: async () => {
       if (!selectedDate) return [];
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
 
       const dayStart = startOfDay(parseISO(selectedDate)).toISOString();
@@ -160,7 +165,7 @@ const QuickStats = () => {
 
   const statItems = [
     {
-      icon: CheckCircle2,
+      icon: CheckCircle,
       label: "Completed",
       value: stats?.completedToday.toString() || "0",
       subtext: "tasks today",
@@ -190,7 +195,6 @@ const QuickStats = () => {
       modalType: "streak" as ModalType,
     },
     {
-      icon: Zap,
       label: "Efficiency",
       value: `${stats?.efficiency || 0}%`,
       subtext: "this week",
@@ -225,9 +229,9 @@ const QuickStats = () => {
           >
             <div className="flex items-start justify-between">
               <div className={`${stat.bgColor} p-2 rounded-lg`}>
-                <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                {stat.icon && <stat.icon size={20} weight="thin" className={stat.color} />}
               </div>
-              <TrendingUp className={`w-4 h-4 ${stat.color} opacity-50`} />
+              <TrendUp size={16} weight="thin" className={`${stat.color} opacity-50`} />
             </div>
             <div className="mt-3">
               <p className="text-2xl font-display font-bold text-foreground">
@@ -266,12 +270,12 @@ const QuickStats = () => {
                 onClick={() => setActiveModal(null)}
                 className="absolute top-4 right-4 p-2 rounded-full bg-muted/50 hover:bg-muted transition-colors"
               >
-                <X className="w-4 h-4 text-muted-foreground" />
+                <X size={16} weight="thin" className="text-muted-foreground" />
               </button>
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
                 <div className="flex items-center gap-3">
                   <div className="bg-emerald-500/20 p-2.5 rounded-xl">
-                    <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                    <CheckCircle size={24} weight="thin" className="text-emerald-400" />
                   </div>
                   <div>
                     <h3 className="font-display text-xl font-bold text-foreground">Today's Wins</h3>
@@ -284,7 +288,7 @@ const QuickStats = () => {
                   transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/20 border border-emerald-500/30"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle size={16} weight="thin" className="text-emerald-400" />
                   <span className="font-display text-2xl font-bold text-emerald-400">{stats?.completedToday || 0}</span>
                   <span className="text-sm text-muted-foreground">completed</span>
                 </motion.div>
@@ -304,7 +308,7 @@ const QuickStats = () => {
                       transition={{ delay: 0.4 + i * 0.05 }}
                       className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
                     >
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                      <CheckCircle size={20} weight="thin" className="text-emerald-400 mt-0.5 shrink-0" />
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-foreground truncate">{task.title}</p>
                         <p className="text-xs text-muted-foreground">Completed at {format(new Date(task.updated_at), "h:mm a")}</p>
@@ -344,15 +348,15 @@ const QuickStats = () => {
                 onClick={() => setActiveModal(null)}
                 className="absolute top-4 right-4 p-2 rounded-full bg-muted/50 hover:bg-muted transition-colors"
               >
-                <X className="w-4 h-4 text-muted-foreground" />
+                <X size={16} weight="thin" className="text-muted-foreground" />
               </button>
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
                 <div className="flex items-center gap-3">
                   <div className="bg-cosmic-silver/20 p-2.5 rounded-xl">
-                    <Clock className="w-6 h-6 text-cosmic-silver" />
+                    <Clock size={24} weight="thin" className="text-cosmic-silver" />
                   </div>
                   <div>
-                    <h3 className="font-display text-xl font-bold text-foreground">Focus Sessions</h3>
+                    <h3 className="font-display text-xl font-bold text-foreground">Deep Work Sessions</h3>
                     <p className="text-sm text-muted-foreground">{format(new Date(), "EEEE, MMMM d")}</p>
                   </div>
                 </div>
@@ -362,41 +366,42 @@ const QuickStats = () => {
                   transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cosmic-silver/20 border border-cosmic-silver/30"
                 >
-                  <Clock className="w-4 h-4 text-cosmic-silver" />
+                  <Clock size={16} weight="thin" className="text-cosmic-silver" />
                   <span className="font-display text-2xl font-bold text-cosmic-silver">{stats?.focusHours || 0}h</span>
-                  <span className="text-sm text-muted-foreground">deep work</span>
+                  <span className="text-sm text-muted-foreground">deep work completed</span>
                 </motion.div>
               </motion.div>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }} className="max-h-64 overflow-y-auto space-y-2">
-                {eventsLoading ? (
+                {sessionsLoading ? (
                   <div className="space-y-2">
                     <Skeleton className="h-16 w-full" />
                     <Skeleton className="h-16 w-full" />
                   </div>
-                ) : todayEvents && todayEvents.length > 0 ? (
-                  todayEvents.map((event, i) => {
-                    const duration = Math.round((new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / (1000 * 60));
+                ) : todaySessions && todaySessions.length > 0 ? (
+                  todaySessions.map((session, i) => {
+                    const startTime = format(new Date(session.focus_started_at), "h:mm a");
+                    const duration = session.focus_minutes_completed;
+                    const breakTierLabel = session.break_tier.replace('_', ' ').toUpperCase();
+                    
                     return (
                       <motion.div
-                        key={event.id}
+                        key={session.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: 0.4 + i * 0.05 }}
                         className="flex items-start gap-3 p-3 rounded-lg bg-cosmic-silver/10 border border-cosmic-silver/20"
                       >
-                        <Clock className="w-5 h-5 text-cosmic-silver mt-0.5 shrink-0" />
+                        <Clock size={20} weight="thin" className="text-cosmic-silver mt-0.5 shrink-0" />
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-foreground truncate">{event.title}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(new Date(event.start_time), "h:mm a")} - {format(new Date(event.end_time), "h:mm a")}
-                            <span className="text-cosmic-silver ml-2">({duration} min)</span>
+                          <p className="font-medium text-foreground truncate">
+                            {startTime} · {duration} min · {breakTierLabel} BREAK
                           </p>
                         </div>
                       </motion.div>
                     );
                   })
                 ) : (
-                  <p className="text-muted-foreground text-center py-8">No focus sessions scheduled today. Plan your deep work! 🎯</p>
+                  <p className="text-muted-foreground text-center py-8">No focus sessions scheduled today. Plan your deep work!</p>
                 )}
               </motion.div>
             </motion.div>
@@ -428,12 +433,12 @@ const QuickStats = () => {
                 onClick={() => setActiveModal(null)}
                 className="absolute top-4 right-4 p-2 rounded-full bg-muted/50 hover:bg-muted transition-colors"
               >
-                <X className="w-4 h-4 text-muted-foreground" />
+                <X size={16} weight="thin" className="text-muted-foreground" />
               </button>
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
                 <div className="flex items-center gap-3">
                   <div className="bg-amber-500/20 p-2.5 rounded-xl">
-                    <Flame className="w-6 h-6 text-amber-400" />
+                    <Flame size={24} weight="thin" className="text-amber-400" />
                   </div>
                   <div>
                     <h3 className="font-display text-xl font-bold text-foreground">Your Streak</h3>
@@ -447,7 +452,7 @@ const QuickStats = () => {
                     transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 border border-amber-500/30"
                   >
-                    <Flame className="w-4 h-4 text-amber-400" />
+                    <Flame size={16} weight="thin" className="text-amber-400" />
                     <span className="font-display text-2xl font-bold text-amber-400">{stats?.streak || 0}</span>
                     <span className="text-sm text-muted-foreground">day streak</span>
                   </motion.div>
@@ -463,7 +468,7 @@ const QuickStats = () => {
                       }}
                       className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-gradient-to-r from-amber-500/30 to-orange-500/30 border border-amber-400/50 hover:border-amber-400 transition-colors"
                     >
-                      <PartyPopper className="w-4 h-4 text-amber-300" />
+                      <Confetti size={16} weight="thin" className="text-amber-300" />
                       <span className="text-sm font-medium text-amber-300">🎉 {currentMilestone}-day milestone!</span>
                     </motion.button>
                   )}
@@ -549,12 +554,12 @@ const QuickStats = () => {
                 onClick={() => setActiveModal(null)}
                 className="absolute top-4 right-4 p-2 rounded-full bg-muted/50 hover:bg-muted transition-colors"
               >
-                <X className="w-4 h-4 text-muted-foreground" />
+                <X size={16} weight="thin" className="text-muted-foreground" />
               </button>
               <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mb-6">
                 <div className="flex items-center gap-3">
                   <div className="bg-cosmic-teal/20 p-2.5 rounded-xl">
-                    <TrendingUp className="w-6 h-6 text-cosmic-teal" />
+                    <TrendUp size={24} weight="thin" className="text-cosmic-teal" />
                   </div>
                   <div>
                     <h3 className="font-display text-xl font-bold text-foreground">Weekly Progress</h3>
@@ -567,7 +572,6 @@ const QuickStats = () => {
                   transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
                   className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cosmic-teal/20 border border-cosmic-teal/30"
                 >
-                  <Zap className="w-4 h-4 text-cosmic-teal" />
                   <span className="font-display text-2xl font-bold text-cosmic-teal">{stats?.efficiency || 0}%</span>
                   <span className="text-sm text-muted-foreground">efficiency</span>
                 </motion.div>
@@ -621,7 +625,7 @@ const QuickStats = () => {
         <DialogContent className="glass border-border/50">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <CheckCircle size={20} weight="thin" className="text-emerald-400" />
               {selectedDate && format(parseISO(selectedDate), "EEEE, MMMM d")}
             </DialogTitle>
           </DialogHeader>
@@ -638,7 +642,7 @@ const QuickStats = () => {
                   key={task.id} 
                   className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
                 >
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                  <CheckCircle size={20} weight="thin" className="text-emerald-400 mt-0.5 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground truncate">{task.title}</p>
                     {task.description && (

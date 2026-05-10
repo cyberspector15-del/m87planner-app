@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCosmicSounds } from "@/hooks/useCosmicSounds";
@@ -88,7 +87,6 @@ const OnboardingMentalModel = ({ onNext }: OnboardingMentalModelProps) => {
             />
             
             <div className="flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-cosmic-teal" />
               <span className="font-display font-semibold text-foreground">AI Command</span>
             </div>
             <div className="mt-3 h-10 rounded-lg bg-muted/30 border border-cosmic-silver/20 flex items-center px-4">

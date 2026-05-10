@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Sparkles, AlertCircle } from "lucide-react";
+import { WarningCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 
 interface AIUsageIndicatorProps {
@@ -30,13 +30,8 @@ const AIUsageIndicator = ({ used, limit, tier, className }: AIUsageIndicatorProp
       )}
     >
       {isExhausted ? (
-        <AlertCircle className="w-3.5 h-3.5 text-destructive" />
-      ) : (
-        <Sparkles className={cn(
-          "w-3.5 h-3.5",
-          isLow ? "text-cosmic-gold" : "text-cosmic-teal"
-        )} />
-      )}
+        <WarningCircle size={14} weight="thin" className="text-destructive" />
+      ) : null}
       
       <div className="flex items-center gap-1.5">
         <span className={cn(

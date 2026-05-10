@@ -4,12 +4,12 @@ A modern, AI-powered task planning and scheduling application built with React, 
 
 ## Features
 
-- 🎯 **Smart Task Management**: Create, organize, and track tasks with priorities and deadlines
-- 📅 **Intelligent Scheduling**: AI-powered auto-planning to optimize your day
-- 🔄 **Routines**: Set up recurring tasks and habits
-- 📊 **Progress Tracking**: Monitor your productivity with detailed analytics
-- 🌙 **Dark Mode**: Beautiful, premium UI with dark theme support
-- 📱 **Responsive Design**: Works seamlessly on desktop and mobile
+-  **Smart Task Management**: Create, organize, and track tasks with priorities and deadlines
+-  **Intelligent Scheduling**: AI-powered auto-planning to optimize your day
+-  **Routines**: Set up recurring tasks and habits
+-  **Progress Tracking**: Monitor your productivity with detailed analytics
+-  **Dark Mode**: Beautiful, premium UI with dark theme support
+-  **Responsive Design**: Works seamlessly on desktop and mobile
 
 ## Tech Stack
 

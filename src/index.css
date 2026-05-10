@@ -51,6 +51,12 @@
     --cosmic-glow: 180 20% 60%;
     --cosmic-accent-teal: 175 40% 45%;
     --cosmic-gold: 40 80% 55%;
+
+    /* Consequences module — cold electric blue */
+    --consequences-blue: 199 93% 60%;
+    --consequences-blue-hex: #38BDF8;
+    --shadow-consequences: 0 0 12px rgba(56, 189, 248, 0.18), 0 0 24px rgba(56, 189, 248, 0.08);
+    --shadow-consequences-hover: 0 0 20px rgba(56, 189, 248, 0.35), 0 0 40px rgba(56, 189, 248, 0.15);
     
     /* Gradients */
     --gradient-cosmic: linear-gradient(135deg, hsl(0 0% 8%) 0%, hsl(0 0% 4%) 100%);
@@ -133,6 +139,52 @@
     box-shadow: 0 0 15px hsl(145 60% 45% / 0.4), 0 0 30px hsl(145 60% 45% / 0.2);
   }
 
+  /* ── Consequences nav item — cold electric blue ambient glow ── */
+  /* No border, no badge. The button itself emits a low signal.    */
+  .btn-consequences-glow {
+    color: hsl(var(--consequences-blue));
+    box-shadow: var(--shadow-consequences);
+    transition: box-shadow 400ms ease, color 200ms ease;
+  }
+
+  .btn-consequences-glow:hover {
+    box-shadow: var(--shadow-consequences-hover);
+    color: #fff;
+    /* no transform — glow only */
+  }
+
+  .btn-consequences-glow[data-active="true"],
+  .btn-consequences-glow.active {
+    box-shadow: var(--shadow-consequences-hover);
+    color: #fff;
+  }
+
+  /* ── /simulate page typography helpers ── */
+  .simulate-label {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #4B5563;
+  }
+
+  .simulate-headline {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #ffffff;
+    line-height: 1.1;
+  }
+
+  .simulate-subtitle {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 0.9375rem;
+    color: #6B7280;
+    line-height: 1.6;
+    letter-spacing: 0.01em;
+  }
+
   /* Cosmic button styles */
   .btn-cosmic {
     @apply relative overflow-hidden transition-all duration-300;
@@ -200,6 +252,71 @@
   .cosmic-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/40;
   }
+
+  /* ════ M87 LIQUID GLASS MATERIAL SYSTEM ════ */
+  
+  /* 1. Base Glass */
+  .glass-m87 {
+    background: rgba(20, 20, 20, 0.45);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    position: relative;
+  }
+  .glass-m87:hover {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.18);
+  }
+  .glass-m87::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.03) 100%);
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+
+  /* 2. Heavy Glass (Exit Friction Modal) */
+  .glass-m87-heavy {
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(40px) saturate(160%);
+    -webkit-backdrop-filter: blur(40px) saturate(160%);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 64px rgba(0, 0, 0, 0.6);
+    position: relative;
+  }
+  .glass-m87-heavy::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    /* surface sheen — most visible application */
+    background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.03) 100%);
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
+
+  /* 3. Light Glass (Timer Plate) */
+  .glass-m87-light {
+    background: rgba(14, 14, 14, 0.3);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    position: relative;
+    border-radius: 16px;
+    transition: background 0.6s ease-in-out, backdrop-filter 0.6s ease-in-out, -webkit-backdrop-filter 0.6s ease-in-out;
+  }
+  .glass-m87-light::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 60%, rgba(255,255,255,0.01) 100%);
+    pointer-events: none;
+    user-select: none;
+    z-index: 0;
+  }
 }
 
 @layer utilities {
@@ -264,4 +381,267 @@
       box-shadow: 0 0 40px hsl(0 0% 75% / 0.4);
     }
   }
+
+  /* Probability badge heartbeat — 4s cold blue signal pulse */
+  @keyframes heartbeat-glow {
+    0%, 100% {
+      box-shadow: 0 0 0px var(--badge-glow, rgba(56,189,248,0.25));
+    }
+    15% {
+      box-shadow: 0 0 14px var(--badge-glow, rgba(56,189,248,0.55));
+    }
+    30% {
+      box-shadow: 0 0 4px var(--badge-glow, rgba(56,189,248,0.2));
+    }
+    45% {
+      box-shadow: 0 0 10px var(--badge-glow, rgba(56,189,248,0.4));
+    }
+    60%, 100% {
+      box-shadow: 0 0 0px var(--badge-glow, rgba(56,189,248,0.1));
+    }
+  }
+
+  /* ════ SIMULATE V4 — Cold Military Intelligence Terminal ════ */
+
+  /* Signal pulse — for the SIMULATION ACTIVE dot */
+  @keyframes signal-pulse {
+    0%, 100% {
+      opacity: 1;
+      box-shadow: 0 0 0px rgba(0, 212, 255, 0);
+    }
+    50% {
+      opacity: 0.3;
+      box-shadow: 0 0 8px rgba(0, 212, 255, 0.6);
+    }
+  }
+
+  /* Scan line sweeping down */
+  @keyframes scan-down {
+    from { top: 0; opacity: 1; }
+    to   { top: 100%; opacity: 0; }
+  }
+
+  /* Blinking cursor for loading button */
+  @keyframes blink-cursor {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+
+  /* Animated dots sequence for loading label */
+  @keyframes dot-1 { 0%, 20%, 100% { opacity: 0.2; } 30%, 70% { opacity: 1; } }
+  @keyframes dot-2 { 0%, 35%, 100% { opacity: 0.2; } 45%, 70% { opacity: 1; } }
+  @keyframes dot-3 { 0%, 50%, 100% { opacity: 0.2; } 60%, 70% { opacity: 1; } }
+
+  /* Gold entry glow — Recommended Trajectory card entrance */
+  @keyframes gold-entry-glow {
+    0%   { box-shadow: 0 0 0px rgba(200, 168, 75, 0); }
+    40%  { box-shadow: 0 0 60px rgba(200, 168, 75, 0.18), inset 0 0 40px rgba(200, 168, 75, 0.06); }
+    100% { box-shadow: 0 0 60px rgba(200, 168, 75, 0.03), inset 0 0 60px rgba(200, 168, 75, 0.02); }
+  }
+
+  /* Radar ring expand */
+  @keyframes radar-ring {
+    0%   { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(4); opacity: 0; }
+  }
+}
+
+/* ════ Simulate page scoped styles ════ */
+.sim-font-mono {
+  font-family: 'Space Mono', monospace;
+}
+
+.sim-font-body {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 300;
+}
+
+/* Active signal dot */
+.sim-signal-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #00D4FF;
+  animation: signal-pulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* Textarea */
+.sim-textarea {
+  background: #0C0C11;
+  border: 1px solid #1A1A24;
+  border-radius: 2px;
+  padding: 24px;
+  font-family: 'Space Mono', monospace;
+  font-size: 14px;
+  color: #F0F0F5;
+  min-height: 140px;
+  width: 100%;
+  resize: vertical;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+.sim-textarea::placeholder { color: #3A3A4A; }
+.sim-textarea:focus {
+  border-color: rgba(0, 212, 255, 0.4);
+  box-shadow: 0 0 0 1px rgba(0, 212, 255, 0.1),
+              0 0 40px rgba(0, 212, 255, 0.05);
+}
+
+/* Run button */
+.sim-run-btn {
+  width: 100%;
+  height: 56px;
+  background: transparent;
+  border: 1px solid rgba(0, 212, 255, 0.5);
+  border-radius: 2px;
+  font-family: 'Space Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.25em;
+  color: #00D4FF;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.sim-run-btn:hover {
+  background: rgba(0, 212, 255, 0.05);
+  border-color: #00D4FF;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.1),
+              inset 0 0 30px rgba(0, 212, 255, 0.03);
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+}
+.sim-run-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.sim-run-btn:disabled:hover {
+  background: transparent;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+/* Blinking cursor char */
+.sim-cursor-blink {
+  animation: blink-cursor 0.7s step-end infinite;
+  display: inline-block;
+  margin-left: 2px;
+}
+
+/* Chip */
+.sim-chip {
+  background: transparent;
+  border: 1px solid #1A1A24;
+  border-radius: 2px;
+  padding: 8px 14px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 300;
+  font-size: 12px;
+  color: #6B6B80;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.sim-chip:hover {
+  border-color: rgba(0, 212, 255, 0.3);
+  color: #F0F0F5;
+  background: rgba(0, 212, 255, 0.03);
+}
+.sim-chip-arrow {
+  color: #00D4FF;
+  font-size: 11px;
+}
+
+/* Branch card */
+.sim-branch-card {
+  background: #0C0C11;
+  border: 1px solid #1A1A24;
+  border-radius: 2px;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Section label with leading line */
+.sim-section-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #3A3A4A;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+.sim-section-label::before {
+  content: '';
+  display: inline-block;
+  width: 20px;
+  height: 1px;
+  background: #1A1A24;
+  flex-shrink: 0;
+}
+
+/* Compounding row */
+.sim-compound-row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #0F0F17;
+}
+.sim-compound-row:last-child { border-bottom: none; }
+
+/* Signal bars */
+.sim-signal-bar {
+  width: 28px;
+  height: 3px;
+  border-radius: 1px;
+}
+
+/* Separator gradient */
+.sim-separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #1A1A24, transparent);
+  border: none;
+  margin: 0;
+}
+
+/* Brief header separator */
+.sim-brief-separator {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(0,212,255,0.3), rgba(0,212,255,0.05), transparent);
+  border: none;
+}
+
+/* Scan line overlay */
+.sim-scan-line {
+  position: absolute;
+  inset-x: 0;
+  height: 3px;
+  background: linear-gradient(180deg, transparent, #00D4FF, transparent);
+  pointer-events: none;
+  z-index: 10;
+  animation: scan-down 0.2s ease-out forwards;
+}
+
+/* Animated loading dots */
+.sim-dot-1 { animation: dot-1 1.4s ease-in-out infinite; }
+.sim-dot-2 { animation: dot-2 1.4s ease-in-out infinite; }
+.sim-dot-3 { animation: dot-3 1.4s ease-in-out infinite; }
+
+/* Recommended card */
+.sim-recommended-card {
+  background: linear-gradient(135deg, #0C0C11, #0A0C0F);
+  border: 1px solid rgba(200, 168, 75, 0.2);
+  border-left: 3px solid #C8A84B;
+  border-radius: 2px;
+  padding: 40px;
+  animation: gold-entry-glow 1.2s ease-out forwards;
 }

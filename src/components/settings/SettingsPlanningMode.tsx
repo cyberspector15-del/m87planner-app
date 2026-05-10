@@ -1,4 +1,4 @@
-import { Sparkles, Hand } from "lucide-react";
+import { Hand } from "@phosphor-icons/react";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useUserSettings } from "@/hooks/useUserSettings";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -51,11 +51,6 @@ const SettingsPlanningMode = () => {
                 settings.planningMode === "ai" ? "bg-cosmic-silver/20" : "bg-muted/50"
               }`}
             >
-              <Sparkles
-                className={`w-5 h-5 ${
-                  settings.planningMode === "ai" ? "text-cosmic-silver" : "text-muted-foreground"
-                }`}
-              />
             </div>
           </div>
           <span
@@ -88,9 +83,11 @@ const SettingsPlanningMode = () => {
               }`}
             >
               <Hand
-                className={`w-5 h-5 ${
+                size={20}
+                weight="thin"
+                className={
                   settings.planningMode === "manual" ? "text-cosmic-silver" : "text-muted-foreground"
-                }`}
+                }
               />
             </div>
           </div>

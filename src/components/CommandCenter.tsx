@@ -1,15 +1,55 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Sparkles, Mic, MicOff, Loader2, Check, Command, History } from "lucide-react";
+import { PaperPlaneRight, Microphone, MicrophoneSlash, CircleNotch, Check, Command, ClockCounterClockwise } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNLPParse } from "@/hooks/useNLPParse";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCosmicSounds } from "@/hooks/useCosmicSounds";
-import { useAIUsage } from "@/hooks/useAIUsage";
-import AIUsageIndicator from "@/components/ai/AIUsageIndicator";
+import { callAIGateway } from "@/lib/aiGateway";
 import ConversationModeToggle from "@/components/ai/ConversationModeToggle";
-import UpgradeModal from "@/components/ai/UpgradeModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useQueryClient } from "@tanstack/react-query";
+
+const CONVERSATION_SYSTEM_PROMPT = `
+You are M87's AI Command — a cold, precise productivity AI. 
+You help users add tasks, events, and routines to their planner 
+through a short structured conversation. Maximum 3 exchanges before concluding.
+
+RULES:
+- Message 1: Analyze what the user wants to add (task/event/routine). 
+  Identify the single most important missing detail. Ask only that one question. 
+  Be brief. No filler.
+- Message 2: Ask the second most important missing detail. One question only.
+- Message 3: Show a structured summary of exactly what will be added. Format:
+
+  READY TO ADD:
+  Type: [Task / Event / Routine]
+  Title: [title]
+  [show relevant fields only — time, duration, frequency, priority]
+  
+  Confirm?
+
+- After summary shown: detect user confirmation intent. 
+  "yes", "ok", "do it", "yeah", "go ahead", "looks good", "sure", "add it", 
+  "confirmed", "yep" and similar all count as confirmation.
+  When confirmed, respond with EXACTLY this JSON and nothing else:
+  {"action":"INSERT","type":"task"|"event"|"routine","data":{...all fields}}
+  
+  For task data fields: 
+  { title, priority(1-5 int), duration_minutes, deadline(ISO string or null) }
+  
+  For event data fields: 
+  { title, start_time(ISO string), end_time(ISO string) }
+  
+  For routine data fields: 
+  { title, frequency("daily"|"weekly"|"weekdays"|"weekends"), 
+    window_start("HH:MM:SS"), window_end("HH:MM:SS"), target_duration_minutes }
+
+- If user says something unrelated mid-flow: respond "Let's finish adding [item] first." and re-ask the last unanswered question.
+- Never ask more than 2 questions total. Never send more than 4 messages total.
+- Never produce INSERT JSON unless user has confirmed.
+`.trim();
 
 const suggestions = [
   "Plan my day",
@@ -54,31 +94,43 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   
-  // AI usage and upgrade modal state
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState<"limit_reached" | "conversation_mode">("limit_reached");
-  
   // Conversation mode state
-  const [conversationMessages, setConversationMessages] = useState<ConversationMessage[]>([]);
+  const [conversationMode, setConversationMode] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
   const [pendingQuestion, setPendingQuestion] = useState<string | null>(null);
+  const [isParsingLocal, setIsParsingLocal] = useState(false);
   
   const { parseCommand, isParsing } = useNLPParse();
   const { vibrate } = useHaptic();
   const { playVoiceConfirm } = useCosmicSounds();
-  const {
-    used,
-    limit,
-    tier,
-    isPro,
-    isLimitReached,
-    conversationModeEnabled,
-    toggleConversationMode,
-    refetch: refetchUsage,
-  } = useAIUsage();
+  const queryClient = useQueryClient();
   
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Clear conversation history when conversation mode is toggled (ON->OFF or OFF->ON)
+  useEffect(() => {
+    setConversationHistory([]);
+    setPendingQuestion(null);
+    console.log("Conversation Mode:", conversationMode);
+  }, [conversationMode]);
+  
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (conversationMode && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [conversationHistory, conversationMode]);
+
+  // Handle textarea auto-expansion
+  const handleTextareaInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const target = e.target;
+    target.style.height = 'auto';
+    target.style.height = `${Math.min(target.scrollHeight, 200)}px`;
+    setInput(target.value);
+  };
 
   // Check for speech recognition support
   useEffect(() => {
@@ -191,7 +243,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
         setHistoryIndex(-1);
         setTempInput("");
         setPendingQuestion(null);
-        setConversationMessages([]);
+        setConversationHistory([]);
         // Stop listening if active
         if (isListening && recognitionRef.current) {
           recognitionRef.current.stop();
@@ -211,7 +263,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
         setHistoryIndex(-1);
         setTempInput("");
         setPendingQuestion(null);
-        setConversationMessages([]);
+        setConversationHistory([]);
         // Stop listening if active
         if (isListening && recognitionRef.current) {
           recognitionRef.current.stop();
@@ -244,73 +296,167 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
   }, []);
 
   const handleConversationModeClick = useCallback(() => {
-    if (!isPro) {
-      setUpgradeReason("conversation_mode");
-      setShowUpgradeModal(true);
-      return;
-    }
-    toggleConversationMode();
-  }, [isPro, toggleConversationMode]);
+    setConversationMode(prev => !prev);
+  }, []);
 
   const handleSubmit = useCallback(async () => {
-    if (!input.trim() || isParsing) return;
-
-    // Check if limit is reached before attempting
-    if (isLimitReached) {
-      setUpgradeReason("limit_reached");
-      setShowUpgradeModal(true);
+    console.log("submit fired, value:", input);
+    if (!input.trim()) {
+      console.warn("empty input");
       return;
     }
-    
+    if (isParsing) {
+      console.log("Submit blocked: still parsing...");
+      return;
+    }
+
     const command = input.trim();
     
-    // Build conversation context if in conversation mode
-    const context = conversationModeEnabled && isPro && conversationMessages.length > 0
-      ? { messages: conversationMessages }
-      : undefined;
+    if (conversationMode) {
+      // 1. Immediate UI update
+      const userMessage = { role: 'user' as const, content: command };
+      const updatedHistory = [...conversationHistory, userMessage];
+      setConversationHistory(updatedHistory);
+      setInput("");
+      setIsParsingLocal(true); // Need local parsing state or use useNLPParse's isParsing? 
+      // Actually CommandCenter doesn't have its own setIsParsing. I'll use a local one if I bypass parseCommand.
+      // But wait, parseCommand handles a lot of logic. 
+      // User said "Call callAIGateway". I'll implement it manually to be safe.
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          setConversationHistory(prev => [...prev, { role: 'assistant', content: "Identity required. Please log in." }]);
+          return;
+        }
+
+        const messages = [
+          { role: 'system' as const, content: CONVERSATION_SYSTEM_PROMPT },
+          ...updatedHistory
+        ];
+
+        console.log("calling ai gateway...");
+        const response = await callAIGateway({ 
+          mode: 'conversation', 
+          messages 
+        });
+        console.log("gateway response:", response);
+        
+        if (response.success) {
+          const content = response.content.trim();
+          
+          if (content.startsWith('{"action":"INSERT"')) {
+            try {
+              const insertAction = JSON.parse(content);
+              const { type, data } = insertAction;
+              
+              let dbError = null;
+              if (type === 'task') {
+                const { error } = await supabase.from('tasks').insert({
+                  user_id: session.user.id,
+                  title: data.title,
+                  priority: data.priority || 2,
+                  duration_minutes: data.duration_minutes || 30,
+                  deadline: data.deadline,
+                  completed: false,
+                  flexible: !data.deadline
+                });
+                dbError = error;
+                queryClient.invalidateQueries({ queryKey: ["tasks"] });
+              } else if (type === 'event') {
+                const { error } = await supabase.from('events').insert({
+                  user_id: session.user.id,
+                  title: data.title,
+                  start_time: data.start_time,
+                  end_time: data.end_time,
+                  status: 'scheduled'
+                });
+                dbError = error;
+                queryClient.invalidateQueries({ queryKey: ["events"] });
+              } else if (type === 'routine') {
+                const { error } = await supabase.from('routines').insert({
+                  user_id: session.user.id,
+                  title: data.title,
+                  frequency: data.frequency || 'daily',
+                  window_start: data.window_start,
+                  window_end: data.window_end,
+                  target_duration_minutes: data.target_duration_minutes || 30,
+                  active: true
+                });
+                dbError = error;
+                queryClient.invalidateQueries({ queryKey: ["routines"] });
+              }
+
+              if (dbError) throw dbError;
+
+              setConversationHistory(prev => [
+                ...prev,
+                { role: 'assistant', content: `Done. ${data.title} added to your planner.` }
+              ]);
+              queryClient.invalidateQueries({ queryKey: ["quick-stats"] });
+              vibrate("success");
+              
+            } catch (parseOrDbError) {
+              console.error("Insert error:", parseOrDbError);
+              const msg = parseOrDbError instanceof Error ? parseOrDbError.message : "Unknown error";
+              setConversationHistory(prev => [
+                ...prev,
+                { role: 'assistant', content: `Signal lost — ${msg}. Try again.` }
+              ]);
+            }
+          } else {
+            setConversationHistory(prev => [
+              ...prev,
+              { role: 'assistant', content: response.content }
+            ]);
+          }
+        } else {
+          throw new Error("API call unsuccessful");
+        }
+      } catch (err) {
+        console.error("Conversation error:", err);
+        setConversationHistory(prev => [
+          ...prev,
+          { role: 'assistant', content: 'Signal lost. Try again.' }
+        ]);
+      } finally {
+        setIsParsingLocal(false);
+      }
+      return;
+    }
+
+    // Existing single-query logic (unchanged)
+    const context = undefined; // Single query doesn't use context here
     
-    const result = await parseCommand(command, context);
+    let result = null;
+    try {
+      console.log("calling parseCommand...");
+      result = await parseCommand(command, context);
+      console.log("parseCommand result:", result);
+    } catch (err) {
+      console.error("parseCommand FAILED:", err);
+    }
     
     if (!result) return;
 
-    // Handle limit reached response
-    if (result.action === "limit_reached") {
-      setUpgradeReason("limit_reached");
-      setShowUpgradeModal(true);
-      refetchUsage();
-      return;
-    }
 
-    // Handle conversational follow-up
-    if (result.needsMoreInfo && result.followUpQuestion) {
-      // Add user message and AI question to conversation
-      setConversationMessages(prev => [
-        ...prev,
-        { role: "user", content: command },
-        { role: "assistant", content: result.followUpQuestion! },
-      ]);
-      setPendingQuestion(result.followUpQuestion);
-      setInput("");
-      vibrate("light");
-      return;
-    }
-    
     if (result.action !== "unknown") {
       addToHistory(command);
       setLastSuccess(true);
       setInput("");
       setHistoryIndex(-1);
       setTempInput("");
+      
+      // Since conversationMode is false here, we always do this:
       setPendingQuestion(null);
-      setConversationMessages([]);
+      setConversationHistory([]);
       vibrate("success");
-      refetchUsage();
       setTimeout(() => {
         setLastSuccess(false);
         setIsSpotlightActive(false);
       }, 1500);
     }
-  }, [input, isParsing, parseCommand, vibrate, addToHistory, isLimitReached, conversationModeEnabled, isPro, conversationMessages, refetchUsage]);
+  }, [input, isParsing, parseCommand, vibrate, addToHistory, conversationMode, conversationHistory]);
 
   const handleSuggestionClick = (suggestion: string) => {
     setInput(suggestion);
@@ -381,13 +527,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
   return (
     <>
       {/* Upgrade Modal */}
-      <UpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        reason={upgradeReason}
-        currentUsage={used}
-        limit={limit}
-      />
+      {/* Upgrade Modal removed */}
 
       {/* Spotlight Overlay - dims background */}
       <AnimatePresence>
@@ -465,12 +605,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                     scale: isSpotlightActive ? [1, 1.1, 1] : 1
                   }}
                   transition={{ duration: 0.6, ease: "easeInOut" }}
-                >
-                  <Sparkles className={cn(
-                    "w-5 h-5 transition-colors duration-300",
-                    isSpotlightActive ? "text-cosmic-teal" : "text-cosmic-silver"
-                  )} />
-                </motion.div>
+                />
                 <span className={cn(
                   "font-display font-semibold transition-all duration-300",
                   isSpotlightActive ? "text-lg text-foreground" : "text-sm text-cosmic-silver"
@@ -483,7 +618,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                     animate={{ opacity: 1, x: 0 }}
                     className="flex items-center gap-1 text-xs text-cosmic-teal"
                   >
-                    <Check className="w-3 h-3" />
+                    <Check size={12} weight="thin" />
                     Done
                   </motion.span>
                 )}
@@ -494,7 +629,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                 className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/40 border border-border/30"
                 whileHover={{ scale: 1.02 }}
               >
-                <Command className="w-3 h-3 text-muted-foreground" />
+                <Command size={12} weight="thin" className="text-muted-foreground" />
                 <span className="text-xs text-muted-foreground font-mono">{shortcutKey}</span>
               </motion.div>
             </div>
@@ -508,37 +643,110 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                   exit={{ opacity: 0, height: 0 }}
                   className="flex items-center justify-between gap-3 mb-4"
                 >
-                  <AIUsageIndicator
-                    used={used}
-                    limit={limit}
-                    tier={tier}
-                  />
+                  <div />
                   <ConversationModeToggle
-                    enabled={conversationModeEnabled}
-                    isPro={isPro}
-                    onToggle={toggleConversationMode}
-                    onProClick={handleConversationModeClick}
+                    enabled={conversationMode}
+                    onToggle={() => setConversationMode(!conversationMode)}
                   />
                 </motion.div>
               )}
             </AnimatePresence>
 
-            {/* Conversation thread (if in conversation mode with pending question) */}
-            <AnimatePresence>
-              {pendingQuestion && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="mb-4 p-3 rounded-xl bg-cosmic-teal/10 border border-cosmic-teal/30"
-                >
-                  <p className="text-sm text-cosmic-teal font-medium mb-1">M87 asks:</p>
-                  <p className="text-sm text-foreground">{pendingQuestion}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {/* Conversation UI (if in conversation mode) */}
+            {conversationMode && (
+              <div 
+                className="mb-3 scroll-smooth"
+                style={{
+                  maxHeight: '320px',
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  padding: '16px',
+                  background: 'rgba(255,255,255,0.02)',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: '8px',
+                  marginBottom: '12px'
+                }}
+              >
+                {conversationHistory.length === 0 && !pendingQuestion && (
+                  <p className="text-center text-muted-foreground/50 text-sm py-4 italic">
+                    Start a conversation with M87...
+                  </p>
+                )}
+                
+                {conversationHistory.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                      background: msg.role === 'user' ? 'rgba(255,255,255,0.08)' : 'transparent',
+                      border: msg.role === 'user' ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: msg.role === 'user' ? '12px 12px 2px 12px' : '2px 12px 12px 12px',
+                      padding: '10px 14px',
+                      color: msg.role === 'user' ? '#ffffff' : 'rgba(255,255,255,0.85)',
+                      fontFamily: '"DM Sans", sans-serif',
+                      fontSize: '14px',
+                      maxWidth: '80%',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word'
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+                ))}
+                
+                {pendingQuestion && (
+                  <div
+                    style={{
+                      alignSelf: 'flex-start',
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: '2px 12px 12px 12px',
+                      padding: '10px 14px',
+                      color: 'rgba(255,255,255,0.85)',
+                      fontFamily: '"DM Sans", sans-serif',
+                      fontSize: '14px',
+                      maxWidth: '80%',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      borderLeft: '2px solid hsl(var(--cosmic-teal))'
+                    }}
+                  >
+                    <p className="text-xs text-cosmic-teal font-medium mb-1 uppercase tracking-wider">M87 asks:</p>
+                    {pendingQuestion}
+                  </div>
+                )}
 
-            {/* Input Field */}
+                {(isParsing || isParsingLocal) && (
+                  <div
+                    style={{
+                      alignSelf: 'flex-start',
+                      background: 'transparent',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                      borderRadius: '2px 12px 12px 12px',
+                      padding: '10px 14px',
+                      color: 'rgba(255,255,255,0.5)',
+                      fontFamily: '"DM Sans", sans-serif',
+                      fontSize: '14px',
+                      maxWidth: '80%'
+                    }}
+                  >
+                    <motion.div
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      ...
+                    </motion.div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+
+            {/* Conversation thread removed (old pending question display) */}
+
+            {/* Input Field Area */}
             <div className="relative">
               {/* History indicator */}
               <AnimatePresence>
@@ -549,30 +757,79 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                     exit={{ opacity: 0, y: -10 }}
                     className="absolute -top-6 left-0 flex items-center gap-1.5 text-xs text-cosmic-silver/70"
                   >
-                    <History className="w-3 h-3" />
+                    <ClockCounterClockwise size={12} weight="thin" />
                     <span className="font-mono">
                       {historyIndex + 1} of {commandHistory.length}
                     </span>
                   </motion.div>
                 )}
               </AnimatePresence>
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={handleInputChange}
-                onFocus={handleFocus}
-                onKeyDown={handleKeyDown}
-                placeholder={pendingQuestion ? "Type your reply..." : placeholders[placeholderIndex]}
-                className={cn(
-                  "w-full bg-muted/30 border rounded-xl text-foreground placeholder:text-muted-foreground/70 focus:outline-none transition-all duration-300",
-                  isSpotlightActive 
-                    ? "px-5 py-4 pr-28 text-lg border-cosmic-silver/30 focus:border-cosmic-teal/50 focus:ring-2 focus:ring-cosmic-teal/20" 
-                    : "px-4 py-3.5 pr-24 text-base border-border/50 focus:border-cosmic-teal/40 focus:ring-1 focus:ring-cosmic-teal/20"
-                )}
-                disabled={isParsing}
-                maxLength={500}
-              />
+
+              {conversationMode ? (
+                <textarea
+                  ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+                  value={input}
+                  onChange={handleTextareaInput}
+                  onFocus={handleFocus}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit();
+                    } else {
+                      handleKeyDown(e as any);
+                    }
+                  }}
+                  placeholder={pendingQuestion ? "Type your reply..." : "Talk to M87..."}
+                  className={cn(
+                    "w-full bg-muted/30 text-foreground placeholder:text-muted-foreground/70 focus:outline-none transition-all duration-300",
+                    "px-4 py-3 pr-28 text-sm resize-none overflow-y-auto"
+                  )}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: '8px',
+                    color: '#ffffff',
+                    fontFamily: '"DM Sans", sans-serif',
+                    fontSize: '14px',
+                    minHeight: '44px',
+                    maxHeight: '200px'
+                  }}
+                  disabled={isParsing}
+                  rows={1}
+                />
+              ) : (
+                <input
+                  ref={inputRef as React.RefObject<HTMLInputElement>}
+                  type="text"
+                  value={input}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    if (historyIndex !== -1) {
+                      setHistoryIndex(-1);
+                      setTempInput("");
+                    }
+                  }}
+                  onFocus={handleFocus}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      console.log("Enter key submit triggered");
+                      handleSubmit();
+                    } else {
+                      handleKeyDown(e);
+                    }
+                  }}
+                  placeholder={pendingQuestion ? "Type your reply..." : placeholders[placeholderIndex]}
+                  className={cn(
+                    "w-full bg-muted/30 border rounded-xl text-foreground placeholder:text-muted-foreground/70 focus:outline-none transition-all duration-300",
+                    isSpotlightActive 
+                      ? "px-5 py-4 pr-28 text-lg border-cosmic-silver/30 focus:border-cosmic-teal/50 focus:ring-2 focus:ring-cosmic-teal/20" 
+                      : "px-4 py-3.5 pr-24 text-base border-border/50 focus:border-cosmic-teal/40 focus:ring-1 focus:ring-cosmic-teal/20"
+                  )}
+                  disabled={isParsing}
+                  maxLength={500}
+                />
+              )}
               
               {/* Voice listening indicator */}
               <AnimatePresence>
@@ -615,10 +872,10 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                       animate={{ scale: [1, 1.1, 1] }}
                       transition={{ duration: 0.5, repeat: Infinity }}
                     >
-                      <MicOff className={isSpotlightActive ? "w-5 h-5" : "w-4 h-4"} />
+                      <MicrophoneSlash size={isSpotlightActive ? 20 : 16} weight="thin" />
                     </motion.div>
                   ) : (
-                    <Mic className={isSpotlightActive ? "w-5 h-5" : "w-4 h-4"} />
+                    <Microphone size={isSpotlightActive ? 20 : 16} weight="thin" />
                   )}
                 </Button>
                 <Button
@@ -632,47 +889,45 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
                   onClick={handleSubmit}
                 >
                   {isParsing ? (
-                    <Loader2 className={cn(
-                      "animate-spin",
-                      isSpotlightActive ? "w-5 h-5" : "w-4 h-4"
-                    )} />
+                    <CircleNotch size={isSpotlightActive ? 20 : 16} weight="thin" className="animate-spin" />
                   ) : (
-                    <Send className={isSpotlightActive ? "w-5 h-5" : "w-4 h-4"} />
+                    <PaperPlaneRight size={isSpotlightActive ? 20 : 16} weight="thin" />
                   )}
                 </Button>
               </div>
             </div>
 
-            {/* Suggestions */}
-            <motion.div 
-              className="flex flex-wrap gap-2 mt-4"
-              initial={false}
-              animate={{ 
-                opacity: isSpotlightActive ? 1 : 0.8,
-                y: isSpotlightActive ? 0 : 2
-              }}
-            >
-              {suggestions.map((suggestion, index) => (
-                <motion.button
-                  key={suggestion}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.02, y: -1 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={cn(
-                    "px-4 py-1.5 text-sm text-muted-foreground rounded-full border transition-all",
-                    isSpotlightActive 
-                      ? "bg-muted/40 border-border/50 hover:border-cosmic-silver/40 hover:text-cosmic-silver hover:bg-muted/60" 
-                      : "bg-muted/30 border-border/30 hover:border-cosmic-silver/30 hover:text-cosmic-silver"
-                  )}
-                  disabled={isParsing}
-                >
-                  {suggestion}
-                </motion.button>
-              ))}
-            </motion.div>
+            {!conversationMode && (
+              <motion.div 
+                className="flex flex-wrap gap-2 mt-4"
+                initial={false}
+                animate={{ 
+                  opacity: isSpotlightActive ? 1 : 0.8,
+                  y: isSpotlightActive ? 0 : 2
+                }}
+              >
+                {suggestions.map((suggestion, index) => (
+                  <motion.button
+                    key={suggestion}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.98 }}
+                    className={cn(
+                      "px-4 py-1.5 text-sm text-muted-foreground rounded-full border transition-all",
+                      isSpotlightActive 
+                        ? "bg-muted/40 border-border/50 hover:border-cosmic-silver/40 hover:text-cosmic-silver hover:bg-muted/60" 
+                        : "bg-muted/30 border-border/30 hover:border-cosmic-silver/30 hover:text-cosmic-silver"
+                    )}
+                    disabled={isParsing}
+                  >
+                    {suggestion}
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
 
             {/* Spotlight mode helper text */}
             <AnimatePresence>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, Send } from "lucide-react";
+import { PaperPlaneRight } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCosmicSounds } from "@/hooks/useCosmicSounds";
@@ -146,9 +146,7 @@ const OnboardingTutorial = ({ onSubmit }: OnboardingTutorialProps) => {
                 <motion.div
                   animate={{ rotate: [0, 180, 360] }}
                   transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                >
-                  <Sparkles className="w-5 h-5 text-cosmic-teal" />
-                </motion.div>
+                />
                 <span className="font-display font-semibold text-lg text-foreground">
                   AI Command
                 </span>
@@ -172,7 +170,7 @@ const OnboardingTutorial = ({ onSubmit }: OnboardingTutorialProps) => {
                   disabled={!input.trim()}
                   onClick={handleSubmit}
                 >
-                  <Send className="w-5 h-5" />
+                  <PaperPlaneRight size={20} weight="thin" />
                 </Button>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import { Zap, MessageSquare, HelpCircle, Crown, Sparkles } from "lucide-react";
+import { ChatCircle, Question, Crown } from "@phosphor-icons/react";
 import { Switch } from "@/components/ui/switch";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useUserSettings } from "@/hooks/useUserSettings";
@@ -70,7 +70,6 @@ const SettingsAIBehavior = () => {
       <div className="p-4 rounded-xl bg-muted/30 border border-border/30">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-cosmic-teal" />
             <span className="text-sm text-muted-foreground">Daily AI Commands</span>
           </div>
           <span className={cn(
@@ -108,7 +107,6 @@ const SettingsAIBehavior = () => {
       {/* Strictness Selector */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Zap className="w-4 h-4" />
           <span>AI Strictness</span>
         </div>
         <div className="grid grid-cols-3 gap-2">
@@ -152,17 +150,18 @@ const SettingsAIBehavior = () => {
               "w-8 h-8 rounded-lg flex items-center justify-center",
               isPro ? "bg-cosmic-teal/10" : "bg-muted/50"
             )}>
-              <MessageSquare className={cn(
-                "w-4 h-4",
-                isPro ? "text-cosmic-teal" : "text-muted-foreground"
-              )} />
+              <ChatCircle
+                size={16}
+                weight="thin"
+                className={isPro ? "text-cosmic-teal" : "text-muted-foreground"}
+              />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-sm text-foreground">Conversation Mode</span>
                 {!isPro && (
                   <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-cosmic-gold/15 text-cosmic-gold text-[10px] font-semibold">
-                    <Crown className="w-2.5 h-2.5" />
+                    <Crown size={10} weight="thin" />
                     Pro
                   </span>
                 )}
@@ -184,7 +183,7 @@ const SettingsAIBehavior = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-              <MessageSquare className="w-4 h-4 text-muted-foreground" />
+              <ChatCircle size={16} weight="thin" className="text-muted-foreground" />
             </div>
             <span className="text-sm text-foreground">Ask before rescheduling</span>
           </div>
@@ -197,7 +196,7 @@ const SettingsAIBehavior = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-              <HelpCircle className="w-4 h-4 text-muted-foreground" />
+              <Question size={16} weight="thin" className="text-muted-foreground" />
             </div>
             <span className="text-sm text-foreground">Show AI explanations</span>
           </div>

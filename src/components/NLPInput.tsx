@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Send, Sparkles, Mic, Loader2, Check } from "lucide-react";
+import { PaperPlaneRight, Microphone, CircleNotch, Check } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useNLPParse } from "@/hooks/useNLPParse";
@@ -56,13 +56,12 @@ const NLPInput = () => {
 
       <div className="relative z-10">
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="w-4 h-4 text-cosmic-teal" />
           <span className="text-sm font-medium text-cosmic-silver">
             AI Command
           </span>
           {lastSuccess && (
             <span className="flex items-center gap-1 text-xs text-cosmic-teal animate-fade-in">
-              <Check className="w-3 h-3" />
+              <Check size={12} weight="thin" />
               Done
             </span>
           )}
@@ -88,7 +87,7 @@ const NLPInput = () => {
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
               disabled={isParsing}
             >
-              <Mic className="w-4 h-4" />
+              <Microphone size={16} weight="thin" />
             </Button>
             <Button
               variant="cosmic-primary"
@@ -98,9 +97,9 @@ const NLPInput = () => {
               onClick={handleSubmit}
             >
               {isParsing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <CircleNotch size={16} weight="thin" className="animate-spin" />
               ) : (
-                <Send className="w-4 h-4" />
+                <PaperPlaneRight size={16} weight="thin" />
               )}
             </Button>
           </div>

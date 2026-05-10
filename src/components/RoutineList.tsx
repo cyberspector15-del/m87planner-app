@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Repeat, Plus, Edit2, Trash2, Clock, Calendar } from 'lucide-react';
+import { Repeat, Plus, PencilSimple, Trash, Clock, Calendar } from "@phosphor-icons/react";
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -71,7 +71,7 @@ const RoutineList = () => {
     <div className="glass rounded-xl p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Repeat className="w-5 h-5 text-cosmic-teal" />
+          <Repeat size={20} weight="thin" className="text-cosmic-teal" />
           <h3 className="font-display font-semibold text-foreground">Routines</h3>
         </div>
         <Button
@@ -80,7 +80,7 @@ const RoutineList = () => {
           onClick={handleCreate}
           className="text-cosmic-silver hover:text-foreground"
         >
-          <Plus className="w-4 h-4 mr-1" />
+          <Plus size={16} weight="thin" className="mr-1" />
           Add
         </Button>
       </div>
@@ -93,7 +93,7 @@ const RoutineList = () => {
             No routines yet. Create recurring habits!
           </p>
           <Button variant="cosmic-outline" size="sm" onClick={handleCreate}>
-            <Plus className="w-4 h-4 mr-1" />
+            <Plus size={16} weight="thin" className="mr-1" />
             Create Routine
           </Button>
         </div>
@@ -126,12 +126,12 @@ const RoutineList = () => {
                       variant="outline"
                       className={`text-xs ${getFrequencyColor(routine.frequency)}`}
                     >
-                      <Calendar className="w-3 h-3 mr-1" />
+                      <Calendar size={12} weight="thin" className="mr-1" />
                       {getFrequencyLabel(routine.frequency)}
                     </Badge>
                     
                     <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                      <Clock size={12} weight="thin" />
                       {formatTime(routine.window_start)} - {formatTime(routine.window_end)}
                     </span>
                     
@@ -152,7 +152,7 @@ const RoutineList = () => {
                     className="h-7 w-7"
                     onClick={() => handleEdit(routine)}
                   >
-                    <Edit2 className="w-3.5 h-3.5" />
+                    <PencilSimple size={14} weight="thin" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -160,7 +160,7 @@ const RoutineList = () => {
                     className="h-7 w-7 text-destructive hover:text-destructive"
                     onClick={() => setDeleteId(routine.id)}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash size={14} weight="thin" />
                   </Button>
                 </div>
               </div>

@@ -1,12 +1,11 @@
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "@phosphor-icons/react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useHaptic } from "@/hooks/useHaptic";
 import CosmicBackground from "@/components/CosmicBackground";
 import SettingsPlanningMode from "@/components/settings/SettingsPlanningMode";
 import SettingsScheduling from "@/components/settings/SettingsScheduling";
-import SettingsAIBehavior from "@/components/settings/SettingsAIBehavior";
 import SettingsFeedback from "@/components/settings/SettingsFeedback";
 import SettingsAbout from "@/components/settings/SettingsAbout";
 
@@ -57,7 +56,7 @@ const Settings = () => {
               onClick={handleBack}
               className="shrink-0"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft size={20} weight="thin" />
             </Button>
             <div>
               <h1 className="font-display text-xl font-bold tracking-wider text-glow">
@@ -88,9 +87,6 @@ const Settings = () => {
             <SettingsScheduling />
           </motion.div>
 
-          <motion.div variants={itemVariants}>
-            <SettingsAIBehavior />
-          </motion.div>
 
           <motion.div variants={itemVariants}>
             <SettingsFeedback />

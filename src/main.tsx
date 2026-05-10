@@ -4,7 +4,7 @@ import "./index.css";
 import { AirModeProvider } from "./features/air-mode/AirModeProvider";
 
 createRoot(document.getElementById("root")!).render(
-    <AirModeProvider>
-        <App />
-    </AirModeProvider>
+  <AirModeProvider>
+    <App />
+  </AirModeProvider>
 );

@@ -61,7 +61,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { user } = useAuth();
   const { toast } = useToast();
   const [settings, setSettings] = useState<UserSettings>(getInitialSettings);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   // Persist settings to localStorage whenever they change
@@ -92,7 +92,16 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .eq("user_id", user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // PGRST116 = no rows returned — profile doesn't exist yet, use defaults silently
+        if (error.code === "PGRST116") {
+          setSettings(getInitialSettings());
+          return;
+        }
+        // Any other error: log it but keep using the localStorage fallback
+        console.warn("Error fetching settings (using cached defaults):", error.message);
+        return;
+      }
 
       if (data) {
         const newSettings: UserSettings = {
@@ -111,8 +120,8 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setSettings(newSettings);
       }
     } catch (error) {
-      console.error("Error fetching settings:", error);
-      // Keep using localStorage fallback
+      // Unexpected exception — keep localStorage fallback quietly
+      console.warn("Unexpected error fetching settings:", error);
     } finally {
       setLoading(false);
     }
@@ -164,9 +173,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         if (error) throw error;
       } catch (error) {
-        console.error("Error updating setting:", error);
-        // Revert on error
-        await fetchSettings();
+        console.warn("Error updating setting:", error);
+        // Revert optimistic update using cached localStorage values (avoids a re-fetch loop)
+        setSettings(getInitialSettings());
         toast({
           title: "Error saving setting",
           description: "Please try again",

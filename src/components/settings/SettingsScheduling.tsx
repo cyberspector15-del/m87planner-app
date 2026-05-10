@@ -1,4 +1,4 @@
-import { Clock, Brain, RotateCcw, Check } from "lucide-react";
+import { Clock, Brain, ArrowsClockwise, Check } from "@phosphor-icons/react";
 import { Switch } from "@/components/ui/switch";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useUserSettings } from "@/hooks/useUserSettings";
@@ -32,7 +32,7 @@ const SaveIndicator = ({ show }: { show: boolean }) => (
         exit={{ opacity: 0, scale: 0.5 }}
         className="absolute -right-1 -top-1 w-5 h-5 bg-green-500/90 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30"
       >
-        <Check className="w-3 h-3 text-white" strokeWidth={3} />
+        <Check size={12} weight="thin" className="text-white" />
       </motion.div>
     )}
   </AnimatePresence>
@@ -198,7 +198,7 @@ const SettingsScheduling = () => {
       {/* Working Hours */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Clock className="w-4 h-4" />
+          <Clock size={16} weight="thin" />
           <span>Working Hours</span>
         </div>
         <div className="flex items-center gap-3">
@@ -227,7 +227,7 @@ const SettingsScheduling = () => {
       {/* Focus Hours */}
       <div className="space-y-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Brain className="w-4 h-4" />
+          <Brain size={16} weight="thin" />
           <span>Focus / Deep Work Hours</span>
         </div>
         <div className="flex items-center gap-3">
@@ -264,7 +264,7 @@ const SettingsScheduling = () => {
       <div className="flex items-center justify-between py-2">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-            <RotateCcw className="w-4 h-4 text-muted-foreground" />
+            <ArrowsClockwise size={16} weight="thin" className="text-muted-foreground" />
           </div>
           <div>
             <span className="text-sm text-foreground">Auto-carry unfinished tasks</span>

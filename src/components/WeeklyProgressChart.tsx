@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, CheckCircle2 } from "lucide-react";
+import { TrendUp, CheckCircle } from "@phosphor-icons/react";
 import { format, isToday, parseISO } from "date-fns";
 import {
   Dialog,
@@ -23,7 +23,8 @@ const WeeklyProgressChart = () => {
     queryKey: ["day-completed-tasks", selectedDate],
     queryFn: async () => {
       if (!selectedDate) return [];
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return [];
 
       const dayStart = startOfDay(parseISO(selectedDate)).toISOString();
@@ -65,7 +66,7 @@ const WeeklyProgressChart = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="font-display font-semibold text-foreground flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-cosmic-teal" />
+              <TrendUp size={16} weight="thin" className="text-cosmic-teal" />
               Weekly Progress
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -138,7 +139,7 @@ const WeeklyProgressChart = () => {
         <DialogContent className="glass border-border/50">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <CheckCircle size={20} weight="thin" className="text-emerald-400" />
               {selectedDate && format(parseISO(selectedDate), "EEEE, MMMM d")}
             </DialogTitle>
           </DialogHeader>
@@ -155,7 +156,7 @@ const WeeklyProgressChart = () => {
                   key={task.id} 
                   className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
                 >
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5 shrink-0" />
+                  <CheckCircle size={20} weight="thin" className="text-emerald-400 mt-0.5 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground truncate">{task.title}</p>
                     {task.description && (

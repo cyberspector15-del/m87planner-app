@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, parseISO } from "date-fns";
-import { CalendarIcon, Clock, MapPin, Plus, Pencil } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, MapPin, Plus, PencilSimple } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,7 +134,7 @@ const EventDialog = ({ selectedDate, event, open: controlledOpen, onOpenChange, 
 
   const defaultTrigger = (
     <Button variant="cosmic-outline" size="sm" className="gap-2">
-      <Plus className="w-4 h-4" />
+      <Plus size={16} weight="thin" />
       Add Event
     </Button>
   );
@@ -215,7 +215,7 @@ const EventDialog = ({ selectedDate, event, open: controlledOpen, onOpenChange, 
                           ) : (
                             <span>Pick a date</span>
                           )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          <CalendarIcon size={16} weight="thin" className="ml-auto opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
@@ -241,7 +241,7 @@ const EventDialog = ({ selectedDate, event, open: controlledOpen, onOpenChange, 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                      <Clock size={12} weight="thin" />
                       Start Time
                     </FormLabel>
                     <FormControl>
@@ -262,7 +262,7 @@ const EventDialog = ({ selectedDate, event, open: controlledOpen, onOpenChange, 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                      <Clock size={12} weight="thin" />
                       End Time
                     </FormLabel>
                     <FormControl>
@@ -284,7 +284,7 @@ const EventDialog = ({ selectedDate, event, open: controlledOpen, onOpenChange, 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-muted-foreground flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
+                    <MapPin size={12} weight="thin" />
                     Location
                   </FormLabel>
                   <FormControl>

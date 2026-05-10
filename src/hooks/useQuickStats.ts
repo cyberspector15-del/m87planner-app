@@ -24,6 +24,13 @@ export const useQuickStats = () => {
           queryClient.invalidateQueries({ queryKey: ["quick-stats"] });
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "focus_sessions" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["quick-stats"] });
+        }
+      )
       .subscribe();
 
     return () => {
@@ -34,11 +41,15 @@ export const useQuickStats = () => {
   return useQuery({
     queryKey: ["quick-stats"],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) throw new Error("Not authenticated");
 
       const today = new Date();
-      const todayStart = startOfDay(today).toISOString();
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+      const startOfTodayISO = startOfToday.toISOString();
+
       const todayEnd = endOfDay(today).toISOString();
       const weekStart = startOfWeek(today, { weekStartsOn: 1 }).toISOString();
       const weekEnd = endOfWeek(today, { weekStartsOn: 1 }).toISOString();
@@ -47,10 +58,11 @@ export const useQuickStats = () => {
       // Fetch all data in parallel for efficiency
       const [
         completedTodayResult,
-        todayEventsResult,
         allCompletedTasksResult,
         weekTotalResult,
         weekCompletedResult,
+        todaySessionsResult,
+        allSessionsTestResult,
       ] = await Promise.all([
         // Tasks completed today
         supabase
@@ -58,16 +70,8 @@ export const useQuickStats = () => {
           .select("*", { count: "exact", head: true })
           .eq("user_id", user.id)
           .eq("completed", true)
-          .gte("updated_at", todayStart)
+          .gte("updated_at", startOfTodayISO)
           .lte("updated_at", todayEnd),
-        
-        // Events today for focus time
-        supabase
-          .from("events")
-          .select("start_time, end_time")
-          .eq("user_id", user.id)
-          .gte("start_time", todayStart)
-          .lte("end_time", todayEnd),
         
         // All completed tasks in last 30 days for streak calculation
         supabase
@@ -94,15 +98,38 @@ export const useQuickStats = () => {
           .eq("completed", true)
           .gte("updated_at", weekStart)
           .lte("updated_at", weekEnd),
+
+        // Focus sessions today
+        supabase
+          .from("focus_sessions")
+          .select("focus_minutes_completed, created_at, user_id")
+          .eq("user_id", user.id)
+          .gt("focus_minutes_completed", 0)
+          .gte("created_at", startOfTodayISO),
+
+        // TEST: ALL focus_sessions for this user (No date filter)
+        supabase
+          .from("focus_sessions")
+          .select("focus_minutes_completed, created_at, user_id")
+          .eq("user_id", user.id)
       ]);
 
-      // Calculate focus time
-      const focusMinutes = todayEventsResult.data?.reduce((total, event) => {
-        const start = new Date(event.start_time);
-        const end = new Date(event.end_time);
-        return total + (end.getTime() - start.getTime()) / (1000 * 60);
-      }, 0) || 0;
-      const focusHours = (focusMinutes / 60).toFixed(1);
+      // Calculate focus time from focus_sessions
+      const totalMinutes = todaySessionsResult.data?.reduce((sum, session) => {
+        return sum + (session.focus_minutes_completed || 0);
+      }, 0) ?? 0;
+
+      console.log('--- DEEP WORK DEBUG START ---');
+      console.log('USER ID:', user?.id);
+      console.log('START OF TODAY (ISO):', startOfTodayISO);
+      console.log('TODAY SESSIONS RESULT:', todaySessionsResult.data);
+      console.log('TODAY SESSIONS ERROR:', todaySessionsResult.error);
+      console.log('ALL SESSIONS (NO DATE FILTER):', allSessionsTestResult.data);
+      console.log('ALL SESSIONS ERROR:', allSessionsTestResult.error);
+      console.log('TOTAL MINUTES CALCULATED:', totalMinutes);
+      console.log('--- DEEP WORK DEBUG END ---');
+
+      const focusHours = (totalMinutes / 60).toFixed(1);
 
       // Calculate streak from completed tasks data
       let streak = 0;

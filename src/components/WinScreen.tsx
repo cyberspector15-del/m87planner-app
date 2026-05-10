@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check } from "lucide-react";
+import { Check } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCosmicSounds } from "@/hooks/useCosmicSounds";
@@ -237,8 +237,9 @@ const WinScreen = ({
                 }}
               >
                 <Check 
-                  className="w-8 h-8 sm:w-10 sm:h-10 text-cosmic-silver/80" 
-                  strokeWidth={1.5}
+                  size={40}
+                  weight="thin"
+                  className="text-cosmic-silver/80" 
                 />
               </div>
             </motion.div>

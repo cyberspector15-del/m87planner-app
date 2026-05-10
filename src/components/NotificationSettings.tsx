@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, BellOff, Clock, TestTube } from "lucide-react";
+import { Bell, BellSlash, Clock, Flask } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -84,7 +84,7 @@ export function NotificationSettings() {
     return (
       <div className="glass rounded-xl p-6">
         <div className="flex items-center gap-3 text-muted-foreground">
-          <BellOff className="h-5 w-5" />
+          <BellSlash size={20} weight="thin" />
           <p className="text-sm">Push notifications are not supported in this browser.</p>
         </div>
       </div>
@@ -95,7 +95,7 @@ export function NotificationSettings() {
     <div className="glass rounded-xl p-6 space-y-6">
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-cosmic-purple/20">
-          <Bell className="h-5 w-5 text-cosmic-purple" />
+          <Bell size={20} weight="thin" className="text-cosmic-purple" />
         </div>
         <div>
           <h3 className="font-display font-semibold text-foreground">Notification Settings</h3>
@@ -129,7 +129,7 @@ export function NotificationSettings() {
         {/* Reminder Time Selection */}
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock size={16} weight="thin" className="text-muted-foreground" />
             <Label htmlFor="reminder-time">Event Reminder Time</Label>
           </div>
           <Select
@@ -161,7 +161,7 @@ export function NotificationSettings() {
             onClick={testNotification}
             className="w-full"
           >
-            <TestTube className="h-4 w-4 mr-2" />
+            <Flask size={16} weight="thin" className="mr-2" />
             Test Notification
           </Button>
         )}

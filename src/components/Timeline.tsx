@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MapPin, Clock, CheckCircle2, Circle, ArrowRight, Calendar, Loader2, Pencil, Trash2, Check } from "lucide-react";
+import { MapPin, Clock, CheckCircle, Circle, ArrowRight, Calendar, CircleNotch, PencilSimple, Trash, Check } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useEvents, useDeleteEvent, useUpdateEvent, Event } from "@/hooks/useEvents";
 import { format, isToday, parseISO } from "date-fns";
@@ -67,7 +67,7 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-cosmic-silver" />
+        <CircleNotch size={24} weight="thin" className="animate-spin text-cosmic-silver" />
       </div>
     );
   }
@@ -83,7 +83,7 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
   if (!events || events.length === 0) {
     return (
       <div className="text-center py-12">
-        <Calendar className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+        <Calendar size={48} weight="thin" className="text-muted-foreground/50 mx-auto mb-4" />
         <p className="text-muted-foreground">No events scheduled</p>
         <p className="text-sm text-muted-foreground/70 mt-1">
           {selectedDate && !isToday(selectedDate)
@@ -125,23 +125,23 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                   )}
                 >
                   {status === "completed" ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle size={16} weight="thin" className="text-emerald-400" />
                   ) : status === "current" ? (
                     <div className="relative">
-                      <Circle className="w-4 h-4 text-cosmic-teal fill-cosmic-teal" />
+                      <Circle size={16} weight="thin" className="text-cosmic-teal fill-cosmic-teal" />
                       <div className="absolute inset-0 animate-ping">
-                        <Circle className="w-4 h-4 text-cosmic-teal" />
+                        <Circle size={16} weight="thin" className="text-cosmic-teal" />
                       </div>
                     </div>
                   ) : (
-                    <Circle className="w-4 h-4 text-muted-foreground" />
+                    <Circle size={16} weight="thin" className="text-muted-foreground" />
                   )}
                 </div>
 
                 {/* Travel buffer indicator */}
                 {event.travel_buffer_minutes && event.travel_buffer_minutes > 0 && status !== "completed" && (
                   <div className="absolute -left-10 -top-2 flex items-center gap-1 text-[10px] text-cosmic-teal">
-                    <MapPin className="w-3 h-3" />
+                    <MapPin size={12} weight="thin" />
                     <span>{event.travel_buffer_minutes}min</span>
                   </div>
                 )}
@@ -183,12 +183,12 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                           status === "upcoming" && "text-foreground"
                         )}
                       >
-                        {status === "completed" && <CheckCircle2 className="w-4 h-4 inline-block mr-2" />}
+                        {status === "completed" && <CheckCircle size={16} weight="thin" className="inline-block mr-2" />}
                         {event.title}
                       </h3>
                       {event.location && (
                         <div className="flex items-center gap-1 mt-1 text-sm text-muted-foreground">
-                          <MapPin className="w-3 h-3" />
+                          <MapPin size={12} weight="thin" />
                           <span>{event.location}</span>
                         </div>
                       )}
@@ -201,11 +201,11 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       <div className="text-right">
                         <div className="flex items-center gap-1 text-sm text-cosmic-silver font-medium">
-                          <Clock className="w-3 h-3" />
+                          <Clock size={12} weight="thin" />
                           <span>{format(startTime, "HH:mm")}</span>
                         </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <ArrowRight className="w-3 h-3" />
+                          <ArrowRight size={12} weight="thin" />
                           <span>{format(endTime, "HH:mm")}</span>
                         </div>
                       </div>
@@ -224,7 +224,7 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                           onClick={() => handleToggleComplete(event)}
                           title={status === "completed" ? "Mark incomplete" : "Mark complete"}
                         >
-                          <Check className="w-3.5 h-3.5" />
+                          <Check size={14} weight="thin" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -232,7 +232,7 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                           className="h-7 w-7 text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => setEditingEvent(event)}
                         >
-                          <Pencil className="w-3.5 h-3.5" />
+                          <PencilSimple size={14} weight="thin" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -240,7 +240,7 @@ const Timeline = ({ selectedDate }: TimelineProps) => {
                           className="h-7 w-7 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => setDeletingEvent(event)}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash size={14} weight="thin" />
                         </Button>
                       </div>
                     </div>

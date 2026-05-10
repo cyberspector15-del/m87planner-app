@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon } from "@phosphor-icons/react";
 import {
   Dialog,
   DialogContent,
@@ -247,7 +247,7 @@ const TaskDialog = ({ open, onOpenChange, task }: TaskDialogProps) => {
                           ) : (
                             <span>Pick a date</span>
                           )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          <CalendarIcon size={16} weight="thin" className="ml-auto opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>

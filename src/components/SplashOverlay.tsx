@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCosmicSounds } from "@/hooks/useCosmicSounds";
@@ -287,7 +286,6 @@ const SplashOverlay = ({
                     ease: "easeInOut",
                   }}
                 >
-                  <Sparkles className="w-8 h-8 sm:w-10 sm:h-10 text-cosmic-silver" />
                 </motion.div>
               </motion.div>
 

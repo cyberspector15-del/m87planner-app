@@ -1,4 +1,4 @@
-import { Vibrate, Volume2 } from "lucide-react";
+import { Vibrate, SpeakerHigh } from "@phosphor-icons/react";
 import { Switch } from "@/components/ui/switch";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useUserSettings } from "@/hooks/useUserSettings";
@@ -37,7 +37,7 @@ const SettingsFeedback = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-              <Vibrate className="w-4 h-4 text-muted-foreground" />
+              <Vibrate size={16} weight="thin" className="text-muted-foreground" />
             </div>
             <span className="text-sm text-foreground">Haptic feedback</span>
           </div>
@@ -50,7 +50,7 @@ const SettingsFeedback = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-              <Volume2 className="w-4 h-4 text-muted-foreground" />
+              <SpeakerHigh size={16} weight="thin" className="text-muted-foreground" />
             </div>
             <span className="text-sm text-foreground">Sound effects</span>
           </div>

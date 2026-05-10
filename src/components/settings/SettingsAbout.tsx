@@ -1,11 +1,11 @@
-import { Info } from "lucide-react";
+import { Info } from "@phosphor-icons/react";
 
 const SettingsAbout = () => {
   return (
     <div className="glass rounded-2xl p-6 space-y-4">
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
-          <Info className="w-4 h-4 text-muted-foreground" />
+          <Info size={16} weight="thin" className="text-muted-foreground" />
         </div>
         <h2 className="font-display text-lg font-semibold text-foreground tracking-wide">
           About

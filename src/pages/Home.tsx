@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles, Clock, MapPin, Brain, Calendar } from "lucide-react";
+import { ArrowRight, Clock, MapPin, Brain, Calendar } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
@@ -71,7 +71,7 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in mt-8">
             <Button variant="cosmic-primary" size="xl" onClick={() => navigate("/auth")} className="gap-2 min-w-[200px]">
               Get Started
-              <ArrowRight className="w-5 h-5" />
+              <ArrowRight size={20} weight="thin" />
             </Button>
             <Button variant="cosmic-outline" size="xl" className="min-w-[200px]" onClick={scrollToFeatures}>
               Learn More
@@ -104,7 +104,7 @@ const Home = () => {
             transitionDelay: `${index * 100}ms`
           }}>
                 <div className="w-12 h-12 rounded-xl bg-cosmic-silver/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-silver/20 transition-colors">
-                  <feature.icon className="w-6 h-6 text-cosmic-silver" />
+                  <feature.icon size={24} weight="thin" className="text-cosmic-silver" />
                 </div>
                 <h3 className="font-display font-semibold text-foreground mb-2">
                   {feature.title}
@@ -134,7 +134,6 @@ const Home = () => {
                 Join the cosmic revolution. Let AI handle your scheduling so you can focus on achieving your goals.
               </p>
               <Button variant="cosmic-primary" size="xl" onClick={() => navigate("/auth")} className="gap-2">
-                <Sparkles className="w-5 h-5" />
                 Start Planning Now
               </Button>
             </div>
@@ -146,7 +145,6 @@ const Home = () => {
       <footer className="relative z-10 py-8 px-6 border-t border-border/30">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-cosmic-silver" />
             <span className="font-display font-bold text-foreground">M87 PLANNER</span>
           </div>
           <p className="text-sm text-muted-foreground">© 2026 M87 Planner. Powered by cosmic AI.</p>

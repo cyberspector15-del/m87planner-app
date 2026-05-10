@@ -8,10 +8,60 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Fetch wrapper with exponential backoff for 429 (rate limit) and 5xx errors.
+ * Clones the request to prevent "Request body has already been used" TypeErrors on retry.
+ */
+const fetchWithBackoff = async (
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  attempt = 0
+): Promise<Response> => {
+  // Always clone the request or create a new one to avoid consuming the body permanently
+  let request: Request;
+  if (input instanceof Request) {
+    request = input.clone();
+  } else {
+    request = new Request(input, init);
+  }
+
+  try {
+    const response = await fetch(request);
+
+    if ((response.status === 429 || response.status >= 500) && attempt < 3) {
+      const delay = Math.pow(2, attempt) * 1000 * (0.8 + Math.random() * 0.4);
+      console.warn(
+        `Supabase request got ${response.status}. Retrying in ${Math.round(delay)}ms (attempt ${attempt + 1}/3)…`
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      // Pass the original input/init to the next attempt so it can create a fresh clone
+      return fetchWithBackoff(input, init, attempt + 1);
+    }
+
+    // If it's auth/v1/token and still 429 after all retries, force a 400 to break gotrue-js infinite loops
+    if (response.status === 429 && request.url.includes('/auth/v1/token')) {
+      console.error("Token refresh rate limited permanently. Forcing logout to break loop.");
+      return new Response(JSON.stringify({ error: 'rate_limit', error_description: 'Rate limit exceeded' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return response;
+  } catch (error) {
+    // Let network errors bubble up, supabase will handle them
+    throw error;
+  }
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
-});
+    detectSessionInUrl: true,
+  },
+  global: {
+    fetch: fetchWithBackoff,
+  },
+});

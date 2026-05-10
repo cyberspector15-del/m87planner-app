@@ -12,43 +12,104 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import { AirCommandTestToggle } from "@/features/air-mode/AirCommandTestToggle";
+import Simulate from "./pages/Simulate";
+import FocusSetup from "./pages/FocusSetup";
+import FocusSession from "./pages/FocusSession";
+import PricingPage from "./pages/PricingPage";
+import { useAirMode } from "@/features/air-mode/AirModeProvider";
+
+import { AirModeControls } from "@/features/air-mode/AirModeControls";
+
+const AirModeWrapper = () => {
+  const { startTracking, stopTracking, isReady, airModeActive } = useAirMode();
+  return (
+    <AirModeControls
+      isReady={isReady}
+      airModeActive={airModeActive}
+      onStart={startTracking}
+      onStop={stopTracking}
+    />
+  );
+};
+
+
+import { MailProvider, useMail } from "@/contexts/MailContext";
+import MailFromM87 from "@/components/MailFromM87";
+
+const MailModalWrapper = () => {
+  const { mailOpen, setMailOpen, setMailUnread } = useMail();
+  return (
+    <MailFromM87 
+      open={mailOpen} 
+      onClose={() => setMailOpen(false)} 
+      onBadgeRead={() => setMailUnread(false)} 
+    />
+  );
+};
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <SettingsProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <Dashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <ProtectedRoute>
-                    <Settings />
-                  </ProtectedRoute>
-                }
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-          <AirCommandTestToggle />
-        </TooltipProvider>
-      </SettingsProvider>
+      <MailProvider>
+        <SettingsProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <Settings />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/simulate"
+                  element={
+                    <ProtectedRoute>
+                      <Simulate />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/focus/setup"
+                  element={
+                    <ProtectedRoute>
+                      <FocusSetup />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/focus/session"
+                  element={
+                    <ProtectedRoute>
+                      <FocusSession />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="/pricing" element={<PricingPage />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+            <AirModeWrapper />
+            <MailModalWrapper />
+          </TooltipProvider>
+        </SettingsProvider>
+      </MailProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

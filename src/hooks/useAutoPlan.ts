@@ -2,18 +2,24 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { callAIGateway } from "@/lib/aiGateway";
+import type { AITask } from "@/lib/aiGateway";
 
-interface ScheduledEvent {
-  id: string;
-  title: string;
+export interface ScheduledEvent {
+  id?: string;
+  task_id?: string;
+  title?: string;
+  task_title?: string;
   start_time: string;
   end_time: string;
   reason?: string;
+  reasoning?: string;
 }
 
-interface AutoPlanResult {
+export interface AutoPlanResult {
   message: string;
   scheduled: ScheduledEvent[];
+  summary?: string;
 }
 
 export const useAutoPlan = () => {
@@ -25,68 +31,160 @@ export const useAutoPlan = () => {
     setIsPlanning(true);
 
     try {
+      // 1. Fetch the user's tasks from Supabase
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Unauthorized: Please log in to use Auto-Plan.");
+      const currentUserId = session.user.id;
 
-      if (!session) {
-        toast({
-          title: "Not authenticated",
-          description: "Please sign in to use Auto-Plan.",
-          variant: "destructive",
-        });
-        return null;
+      const { data: tasksData, error: tasksError } = await supabase
+        .from('tasks')
+        .select('id, title, description, priority, duration_minutes, deadline, flexible')
+        .eq('user_id', currentUserId)
+        .eq('completed', false)
+        .order('priority', { ascending: true })
+        .limit(10);
+
+      if (tasksError) {
+        throw new Error(`Failed to load tasks: ${tasksError.message}`);
       }
 
-      // Prepare prompt for Auto-Plan
-      const prompt = `Plan my day for ${date.toDateString()}.`;
+      if (!tasksData || tasksData.length === 0) {
+        toast({
+          title: "No tasks to schedule",
+          description: "No tasks found to schedule.",
+        });
+        return { message: "No tasks found to schedule.", scheduled: [] };
+      }
 
-      const response = await supabase.functions.invoke("ai-gateway", {
-        body: {
-          userId: session.user.id,
-          mode: "silent",
-          messages: [{ role: "user", content: prompt }],
-          metadata: {
-            type: "auto-plan",
-            date: date.toISOString()
-          }
+      const tasks: AITask[] = tasksData.map((t) => ({
+        id: t.id,
+        title: t.title,
+        description: t.description,
+        priority: t.priority,
+        duration_minutes: t.duration_minutes,
+        deadline: t.deadline,
+        flexible: t.flexible,
+        completed: false,
+      }));
+
+      // 2. Call the AI Gateway with auto-scheduler mode
+      const response = await callAIGateway({
+        mode: "auto-scheduler",
+        tasks,
+        metadata: {
+          targetDate: date.toISOString(),
+          targetDateLabel: date.toDateString(),
         },
       });
 
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
+      // Log raw response before any parsing so errors are visible in DevTools
+      console.log("[useAutoPlan] raw ai-gateway response:", response);
 
-      const aiResponseText = response.data.content;
+      // 3. Extract scheduled_blocks from parsed response
+      let scheduled: ScheduledEvent[] = [];
+      let summary = "";
+      // Guard against undefined content (unexpected response shape)
+      let message: string = response?.content ?? "";
 
-      // Parse the JSON content from the AI response
-      let result: AutoPlanResult;
       try {
-        const jsonString = aiResponseText.replace(/```json\n?|\n?```/g, "").trim();
-        result = JSON.parse(jsonString);
-      } catch (e) {
-        console.error("Failed to parse AI response:", e);
-        throw new Error("Invalid response from AI planner");
+        if (response?.parsed && typeof response.parsed === "object") {
+          const parsed = response.parsed as {
+            scheduled_blocks?: unknown;
+            scheduled?: unknown;
+            summary?: unknown;
+            message?: unknown;
+          };
+
+          const rawBlocks = parsed.scheduled_blocks ?? parsed.scheduled;
+          if (Array.isArray(rawBlocks)) {
+            // Validate each block has minimum required shape before storing
+            scheduled = rawBlocks.filter(
+              (b): b is ScheduledEvent =>
+                b !== null &&
+                typeof b === "object" &&
+                typeof (b as ScheduledEvent).title === "string"
+            );
+          }
+          summary = typeof parsed.summary === "string" ? parsed.summary : "";
+          message = typeof parsed.message === "string" ? parsed.message : message;
+        } else if (typeof response?.content === "string" && response.content.trim()) {
+          // Fallback: try parsing the raw content string
+          const jsonString = response.content
+            .replace(/```json\n?|\n?```/g, "")
+            .trim();
+          const fallback = JSON.parse(jsonString) as {
+            scheduled_blocks?: unknown;
+            scheduled?: unknown;
+            summary?: string;
+            message?: string;
+          };
+          const rawBlocks = fallback.scheduled_blocks ?? fallback.scheduled;
+          if (Array.isArray(rawBlocks)) {
+            scheduled = rawBlocks.filter(
+              (b): b is ScheduledEvent =>
+                b !== null &&
+                typeof b === "object" &&
+                typeof (b as ScheduledEvent).title === "string"
+            );
+          }
+          summary = fallback.summary ?? "";
+          message = fallback.message ?? message;
+        }
+      } catch (parseError) {
+        console.warn("[useAutoPlan] Could not parse AI response, using content as summary.", parseError);
+        // Response wasn't JSON — treat content as the summary message
+        summary = response?.content ?? "AI scheduling complete.";
       }
 
-      if (result.scheduled && result.scheduled.length > 0) {
+      if (scheduled.length > 0) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Unauthorized: Please log in to save your schedule.");
+
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+        // Perform parallel insertions
+        await Promise.all(
+          scheduled.map(async (block) => {
+            const taskId = block.task_id && uuidRegex.test(block.task_id) ? block.task_id : null;
+            const title = block.task_title || block.title || "Scheduled Task";
+            
+            const { error: insertError } = await supabase.from("events").insert({
+              user_id: session.user.id,
+              task_id: taskId,
+              title: title,
+              start_time: block.start_time,
+              end_time: block.end_time,
+              status: "scheduled",
+            });
+
+            if (insertError) {
+              console.error(`Error inserting block "${title}":`, insertError);
+              throw insertError;
+            }
+          })
+        );
+
         toast({
           title: "Auto-Plan Complete",
-          description: result.message,
+          description: summary || message || `Your day is ready with ${scheduled.length} blocks.`,
         });
-
-        // Invalidate events to refresh timeline
+        
+        // Refresh UI
         queryClient.invalidateQueries({ queryKey: ["events"] });
+        queryClient.invalidateQueries({ queryKey: ["tasks"] });
       } else {
         toast({
           title: "No tasks scheduled",
-          description: result.message || "No available tasks to schedule.",
+          description: summary || message || "No available time slots found.",
         });
       }
 
-      return result;
+      return { message: message || summary, scheduled, summary };
     } catch (error) {
       console.error("Auto-plan error:", error);
 
-      const errorMessage = error instanceof Error ? error.message : "Failed to auto-plan";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to auto-plan";
 
       if (errorMessage.includes("429") || errorMessage.includes("Rate limit")) {
         toast({
@@ -94,7 +192,10 @@ export const useAutoPlan = () => {
           description: "Please wait a moment and try again.",
           variant: "destructive",
         });
-      } else if (errorMessage.includes("402") || errorMessage.includes("credits")) {
+      } else if (
+        errorMessage.includes("402") ||
+        errorMessage.includes("credits")
+      ) {
         toast({
           title: "AI credits exhausted",
           description: "Please add credits to continue using AI features.",

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Sparkles, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { Envelope, Lock, ArrowRight, CircleNotch } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import CosmicBackground from "@/components/CosmicBackground";
 import SplashOverlay from "@/components/SplashOverlay";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 
 const authSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -107,7 +108,7 @@ const Auth = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-cosmic-silver" />
+        <CircleNotch size={32} weight="thin" className="animate-spin text-cosmic-silver" />
       </div>
     );
   }
@@ -127,7 +128,6 @@ const Auth = () => {
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="relative">
             <div className="w-12 h-12 rounded-full bg-cosmic-radial border border-cosmic-silver/30 flex items-center justify-center glow-silver">
-              <Sparkles className="w-6 h-6 text-cosmic-silver" />
             </div>
           </div>
           <div>
@@ -153,6 +153,19 @@ const Auth = () => {
             </p>
           </div>
 
+          <GoogleAuthButton />
+
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-[#333333]/40" />
+            </div>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-[#101010] px-3 text-[#999999] font-inter text-[11px] tracking-tight">
+                {isSignUp ? "or sign up with email" : "or continue with email"}
+              </span>
+            </div>
+          </div>
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
@@ -163,7 +176,7 @@ const Auth = () => {
                     <FormLabel className="text-muted-foreground">Email</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Envelope size={16} weight="thin" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <Input
                           {...field}
                           type="email"
@@ -185,7 +198,7 @@ const Auth = () => {
                     <FormLabel className="text-muted-foreground">Password</FormLabel>
                     <FormControl>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Lock size={16} weight="thin" className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <Input
                           {...field}
                           type="password"
@@ -207,11 +220,11 @@ const Auth = () => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <CircleNotch size={16} weight="thin" className="animate-spin" />
                 ) : (
                   <>
                     {isSignUp ? "Create Account" : "Sign In"}
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight size={16} weight="thin" />
                   </>
                 )}
               </Button>

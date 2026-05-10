@@ -1,139 +1,104 @@
-/**
- * M87 Air Command — usePointerEngine Hook
- * Phase 2: Pointer Engine
- *
- * Converts raw hand landmarks into a smoothed screen-space cursor position.
- *
- * Pipeline:
- *   Landmarks (normalized 0-1)
- *   → midpoint of index tip (8) + middle tip (12)
- *   → map to screen pixels
- *   → LERP smoothing at ~60 FPS via requestAnimationFrame
- *   → cursorX, cursorY, cursorVisible
- *
- * CRITICAL PERF NOTE:
- *   All animation happens inside a ref-based RAF loop.
- *   React state is only updated once per ~16 ms frame via a dirty flag,
- *   so the component re-render budget is minimal.
- */
-
-import { useEffect, useRef, useState, useCallback } from "react";
-import type { HandLandmark } from "./types";
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-/** LERP factor: higher = snappier, lower = more cinematic glide */
-const SMOOTHING_FACTOR = 0.18;
-
-/** Ignore target deltas smaller than this (pixels) to kill micro-jitter */
-const JITTER_THRESHOLD_PX = 1;
-
-/** Landmark indices we care about */
-const INDEX_TIP = 8;
-const MIDDLE_TIP = 12;
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface PointerEngineState {
-    cursorX: number;
-    cursorY: number;
-    cursorVisible: boolean;
-}
-
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { HandLandmark, AirModeConfig } from './types';
 
 export function usePointerEngine(
-    handLandmarks: HandLandmark[] | null,
-    handDetected: boolean
-): PointerEngineState {
-    // Smoothed cursor — updated via RAF loop, drives React state
-    const smoothedX = useRef(0);
-    const smoothedY = useRef(0);
+  handLandmarks: HandLandmark[] | null,
+  handDetected: boolean,
+  config: AirModeConfig
+) {
+  const cursorXRef = useRef(0);
+  const cursorYRef = useRef(0);
+  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
+  const [cursorVisible, setCursorVisible] = useState(false);
 
-    // Target position derived from landmarks — written by landmark effect
-    const targetX = useRef(0);
-    const targetY = useRef(0);
+  const landmarksRef = useRef<HandLandmark[] | null>(null);
+  const animationRef = useRef<number | null>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const configRef = useRef(config);
 
-    // Frame handle
-    const rafRef = useRef<number | null>(null);
+  useEffect(() => { landmarksRef.current = handLandmarks; }, [handLandmarks]);
+  useEffect(() => { configRef.current = config; }, [config]);
 
-    // React-visible state (updated once per frame when changed)
-    const [cursorX, setCursorX] = useState(0);
-    const [cursorY, setCursorY] = useState(0);
-    const [cursorVisible, setCursorVisible] = useState(false);
+  // Handle visibility based on handDetected
+  useEffect(() => {
+    if (handDetected) {
+      if (hideTimeoutRef.current !== null) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+      setCursorVisible(true);
+    } else {
+      hideTimeoutRef.current = setTimeout(() => {
+        setCursorVisible(false);
+      }, 2000);
+    }
 
-    // ─── Update target from landmarks ─────────────────────────────────────────
+    return () => {
+      if (hideTimeoutRef.current !== null) {
+        clearTimeout(hideTimeoutRef.current);
+      }
+    };
+  }, [handDetected]);
 
-    useEffect(() => {
-        if (!handLandmarks || handLandmarks.length < 13) return;
+  const loop = useCallback(() => {
+    const landmarks = landmarksRef.current;
+    const cfg = configRef.current;
 
-        const indexTip = handLandmarks[INDEX_TIP];
-        const middleTip = handLandmarks[MIDDLE_TIP];
+    if (landmarks && landmarks.length >= 13) {
+      let targetX: number;
+      let targetY: number;
 
-        // Midpoint in normalized space
-        const midX = (indexTip.x + middleTip.x) / 2;
-        const midY = (indexTip.y + middleTip.y) / 2;
+      if (cfg.calibration) {
+        // Apply calibrated bounding-box mapping
+        const rawX = (landmarks[8].x + landmarks[12].x) / 2;
+        const rawY = (landmarks[8].y + landmarks[12].y) / 2;
+        const { minX, maxX, minY, maxY } = cfg.calibration;
+        const normX = Math.max(0, Math.min(1, (rawX - minX) / (maxX - minX)));
+        const normY = Math.max(0, Math.min(1, (rawY - minY) / (maxY - minY)));
+        targetX = (1 - normX) * window.innerWidth * cfg.cursorSpeedMultiplier;
+        targetY = normY * window.innerHeight * cfg.cursorSpeedMultiplier;
+      } else {
+        // Raw mapping with mirrored X
+        targetX = (1 - (landmarks[8].x + landmarks[12].x) / 2) * window.innerWidth * cfg.cursorSpeedMultiplier;
+        targetY = ((landmarks[8].y + landmarks[12].y) / 2) * window.innerHeight * cfg.cursorSpeedMultiplier;
+      }
 
-        // Map to screen space
-        const screenX = midX * window.innerWidth;
-        const screenY = midY * window.innerHeight;
+      const prevX = cursorXRef.current;
+      const prevY = cursorYRef.current;
 
-        // Jitter filter: skip if the movement is too tiny
-        const dx = screenX - targetX.current;
-        const dy = screenY - targetY.current;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+      const alpha = cfg.smoothingFactor;
+      const rawNewX = prevX + (targetX - prevX) * alpha;
+      const rawNewY = prevY + (targetY - prevY) * alpha;
 
-        if (dist >= JITTER_THRESHOLD_PX) {
-            targetX.current = screenX;
-            targetY.current = screenY;
-        }
-    }, [handLandmarks]);
+      // Edge clamping
+      const newX = Math.max(0, Math.min(window.innerWidth, rawNewX));
+      const newY = Math.max(0, Math.min(window.innerHeight, rawNewY));
 
-    // ─── Animation Loop ────────────────────────────────────────────────────────
+      const dx = Math.abs(newX - prevX);
+      const dy = Math.abs(newY - prevY);
 
-    const animationLoop = useCallback(() => {
-        // LERP smoothed position toward target
-        const newX = smoothedX.current + (targetX.current - smoothedX.current) * SMOOTHING_FACTOR;
-        const newY = smoothedY.current + (targetY.current - smoothedY.current) * SMOOTHING_FACTOR;
+      if (dx >= 1 || dy >= 1) {
+        cursorXRef.current = newX;
+        cursorYRef.current = newY;
+        setCursorPos({ x: newX, y: newY });
+      }
+    }
 
-        smoothedX.current = newX;
-        smoothedY.current = newY;
+    animationRef.current = requestAnimationFrame(loop);
+  }, []);
 
-        // Push rounded pixel values to React state (avoids sub-pixel thrashing)
-        setCursorX(Math.round(newX));
-        setCursorY(Math.round(newY));
+  useEffect(() => {
+    animationRef.current = requestAnimationFrame(loop);
+    return () => {
+      if (animationRef.current !== null) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [loop]);
 
-        rafRef.current = requestAnimationFrame(animationLoop);
-    }, []);
-
-    // ─── Start / stop loop based on hand presence ──────────────────────────────
-
-    useEffect(() => {
-        if (handDetected) {
-            setCursorVisible(true);
-
-            // Kick off animation loop if not already running
-            if (rafRef.current === null) {
-                rafRef.current = requestAnimationFrame(animationLoop);
-            }
-        } else {
-            // Hide cursor when no hand
-            setCursorVisible(false);
-
-            // Stop the loop (saves GPU/CPU when inactive)
-            if (rafRef.current !== null) {
-                cancelAnimationFrame(rafRef.current);
-                rafRef.current = null;
-            }
-        }
-
-        return () => {
-            if (rafRef.current !== null) {
-                cancelAnimationFrame(rafRef.current);
-                rafRef.current = null;
-            }
-        };
-    }, [handDetected, animationLoop]);
-
-    return { cursorX, cursorY, cursorVisible };
+  return {
+    cursorX: cursorPos.x,
+    cursorY: cursorPos.y,
+    cursorVisible,
+  };
 }

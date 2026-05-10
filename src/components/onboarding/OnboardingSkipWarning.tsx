@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { AlertTriangle } from "lucide-react";
+import { Warning } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useHaptic } from "@/hooks/useHaptic";
 
@@ -53,7 +53,7 @@ const OnboardingSkipWarning = ({ onConfirmSkip, onCancel }: OnboardingSkipWarnin
           transition={{ delay: 0.1, type: "spring", damping: 15 }}
           className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mx-auto mb-4"
         >
-          <AlertTriangle className="w-6 h-6 text-amber-400" />
+          <Warning size={24} weight="thin" className="text-amber-400" />
         </motion.div>
 
         <h3 className="font-display text-xl font-semibold text-cosmic-white mb-2">

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { CalendarDays, Settings, Bell, LogOut } from "lucide-react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import { Mail } from "lucide-react";
+import { Calendar, GearSix, Bell, SignOut, GitBranch, Target } from "@phosphor-icons/react";
 import logoIcon from "@/assets/logo-icon.jpg";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,9 +18,11 @@ import RoutineList from "@/components/RoutineList";
 import TaskList from "@/components/TaskList";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
 import { NotificationSettings } from "@/components/NotificationSettings";
+import { useMail } from "@/contexts/MailContext";
 
 const Header = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { vibrate } = useHaptic();
@@ -27,6 +30,9 @@ const Header = () => {
   const [tasksOpen, setTasksOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const { mailOpen, setMailOpen, mailUnread, setMailUnread } = useMail();
+  const isSimulateActive = location.pathname === "/simulate";
+  const isFocusActive = location.pathname.startsWith("/focus");
 
   const handleSignOut = async () => {
     await signOut();
@@ -63,9 +69,31 @@ const Header = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            <Button variant="cosmic-ghost" size="sm" className="gap-2">
-              <CalendarDays className="w-4 h-4" />
-              Dashboard
+            <Button 
+              asChild
+              variant="cosmic-ghost" 
+              size="sm" 
+              className={`gap-2${location.pathname === "/" ? " active" : ""}`}
+              data-active={location.pathname === "/"}
+              onClick={() => vibrate("light")}
+            >
+              <Link to="/">
+                <Calendar size={16} weight="thin" />
+                Dashboard
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="cosmic-ghost"
+              size="sm"
+              className={`gap-2${isFocusActive ? " active" : ""}`}
+              data-active={isFocusActive}
+              onClick={() => vibrate("light")}
+            >
+              <Link to="/focus/setup">
+                <Target size={16} weight="thin" />
+                Focus
+              </Link>
             </Button>
             <Sheet open={tasksOpen} onOpenChange={setTasksOpen}>
               <SheetTrigger asChild>
@@ -101,6 +129,23 @@ const Header = () => {
                 </div>
               </SheetContent>
             </Sheet>
+
+            {/* ── Consequences — premium feature, cold electric blue glow ── */}
+            <Button
+              variant="cosmic-ghost"
+              size="sm"
+              className={`btn-consequences-glow gap-2${isSimulateActive ? " active" : ""}`}
+              data-active={isSimulateActive}
+              onClick={() => {
+                vibrate("light");
+                navigate("/simulate");
+              }}
+              title="Consequence Simulator — premium feature"
+            >
+              <GitBranch size={16} weight="thin" />
+              Consequences
+            </Button>
+
             <Sheet open={analyticsOpen} onOpenChange={setAnalyticsOpen}>
               <SheetTrigger asChild>
                 <Button variant="cosmic-ghost" size="sm">
@@ -122,10 +167,29 @@ const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            <div className="relative">
+              <Button
+                variant="cosmic-ghost"
+                size="icon"
+                onClick={() => {
+                  vibrate("light");
+                  setMailOpen(true);
+                }}
+                className="opacity-60 hover:opacity-100 transition-opacity duration-200 ease-in-out"
+              >
+                <Mail size={16} />
+              </Button>
+              {mailUnread && (
+                <div 
+                  className="absolute top-0 right-0 w-[8px] h-[8px] rounded-full bg-[#FF3B3B]"
+                  style={{ boxShadow: '0 0 6px #FF3B3B' }}
+                />
+              )}
+            </div>
             <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
               <SheetTrigger asChild>
                 <Button variant="cosmic-ghost" size="icon" className="relative">
-                  <Bell className="w-4 h-4" />
+                  <Bell size={16} weight="thin" />
                   <span className="absolute top-2 right-2 w-2 h-2 bg-cosmic-teal rounded-full" />
                 </Button>
               </SheetTrigger>
@@ -148,7 +212,7 @@ const Header = () => {
                 navigate("/settings");
               }}
             >
-              <Settings className="w-4 h-4" />
+              <GearSix size={16} weight="thin" />
             </Button>
             <Button 
               variant="cosmic-ghost" 
@@ -156,7 +220,7 @@ const Header = () => {
               onClick={handleSignOut}
               title="Sign out"
             >
-              <LogOut className="w-4 h-4" />
+              <SignOut size={16} weight="thin" />
             </Button>
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cosmic-silver/20 to-cosmic-teal/20 border border-cosmic-silver/30 flex items-center justify-center ml-2">
               <span className="text-sm font-medium text-cosmic-silver">{userInitial}</span>

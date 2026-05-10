@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, Zap, MessageSquare, Crown } from "lucide-react";
+import { X, ChatCircle, Crown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 interface UpgradeModalProps {
@@ -48,7 +48,7 @@ const UpgradeModal = ({ isOpen, onClose, reason, currentUsage = 3, limit = 3 }: 
                 onClick={onClose}
                 className="absolute top-4 right-4 p-1.5 rounded-full bg-muted/30 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
               >
-                <X className="w-4 h-4" />
+                <X size={16} weight="thin" />
               </button>
 
               <div className="relative z-10">
@@ -60,7 +60,7 @@ const UpgradeModal = ({ isOpen, onClose, reason, currentUsage = 3, limit = 3 }: 
                     transition={{ delay: 0.1, type: "spring" }}
                     className="p-4 rounded-full bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30"
                   >
-                    <Crown className="w-8 h-8 text-amber-400" />
+                    <Crown size={32} weight="thin" className="text-amber-400" />
                   </motion.div>
                 </div>
 
@@ -90,19 +90,17 @@ const UpgradeModal = ({ isOpen, onClose, reason, currentUsage = 3, limit = 3 }: 
                 <div className="space-y-3 mb-6">
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <div className="p-1.5 rounded-lg bg-cosmic-teal/10">
-                      <Zap className="w-4 h-4 text-cosmic-teal" />
                     </div>
                     <span>20 AI commands per day</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <div className="p-1.5 rounded-lg bg-cosmic-teal/10">
-                      <MessageSquare className="w-4 h-4 text-cosmic-teal" />
+                      <ChatCircle size={16} weight="thin" className="text-cosmic-teal" />
                     </div>
                     <span>Conversational planning mode</span>
                   </div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground">
                     <div className="p-1.5 rounded-lg bg-cosmic-teal/10">
-                      <Sparkles className="w-4 h-4 text-cosmic-teal" />
                     </div>
                     <span>Smarter AI with context awareness</span>
                   </div>

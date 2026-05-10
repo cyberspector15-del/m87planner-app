@@ -15,7 +15,7 @@ import {
   Line,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Circle, TrendingUp, Calendar } from "lucide-react";
+import { CheckCircle, Circle, TrendUp, Calendar } from "@phosphor-icons/react";
 import { format, subDays, startOfDay, isWithinInterval } from "date-fns";
 
 const COLORS = {
@@ -93,7 +93,7 @@ const AnalyticsPanel = () => {
         <Card className="glass border-border/30">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-cosmic-teal/20 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-cosmic-teal" />
+              <CheckCircle size={20} weight="thin" className="text-cosmic-teal" />
             </div>
             <div>
               <p className="text-2xl font-display font-bold text-foreground">{stats.completed}</p>
@@ -104,7 +104,7 @@ const AnalyticsPanel = () => {
         <Card className="glass border-border/30">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-cosmic-silver/20 flex items-center justify-center">
-              <Circle className="w-5 h-5 text-cosmic-silver" />
+              <Circle size={20} weight="thin" className="text-cosmic-silver" />
             </div>
             <div>
               <p className="text-2xl font-display font-bold text-foreground">{stats.pending}</p>
@@ -118,7 +118,7 @@ const AnalyticsPanel = () => {
       <Card className="glass border-border/30">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <TrendingUp className="w-4 h-4" />
+            <TrendUp size={16} weight="thin" />
             Task Completion Rate
           </CardTitle>
         </CardHeader>
@@ -182,7 +182,7 @@ const AnalyticsPanel = () => {
       <Card className="glass border-border/30">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
+            <Calendar size={16} weight="thin" />
             Weekly Activity
           </CardTitle>
         </CardHeader>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX } from "lucide-react";
+import { SpeakerHigh, SpeakerSlash } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useCosmicSounds } from "@/hooks/useCosmicSounds";
@@ -210,9 +210,9 @@ const AIProcessingOverlay = ({
             aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
           >
             {isMuted ? (
-              <VolumeX className="w-5 h-5 text-cosmic-silver/60" />
+              <SpeakerSlash size={20} weight="thin" className="text-cosmic-silver/60" />
             ) : (
-              <Volume2 className="w-5 h-5 text-cosmic-silver" />
+              <SpeakerHigh size={20} weight="thin" className="text-cosmic-silver" />
             )}
           </motion.button>
 

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Calendar } from "lucide-react";
+import { CaretLeft, CaretRight, Calendar } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { format, addDays, startOfWeek, isSameDay, isToday } from "date-fns";
@@ -27,7 +27,7 @@ const DateSelector = ({ selectedDate, onDateChange }: DateSelectorProps) => {
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex items-center gap-2">
-        <Calendar className="w-5 h-5 text-cosmic-silver" />
+        <Calendar size={20} weight="thin" className="text-cosmic-silver" />
         <h2 className="font-display text-lg font-semibold text-foreground">
           {format(selectedDate, "MMMM yyyy")}
         </h2>
@@ -40,7 +40,7 @@ const DateSelector = ({ selectedDate, onDateChange }: DateSelectorProps) => {
           className="h-8 w-8"
           onClick={goToPreviousWeek}
         >
-          <ChevronLeft className="w-4 h-4" />
+          <CaretLeft size={16} weight="thin" />
         </Button>
 
         <div className="flex items-center gap-1 px-2">
@@ -78,7 +78,7 @@ const DateSelector = ({ selectedDate, onDateChange }: DateSelectorProps) => {
           className="h-8 w-8"
           onClick={goToNextWeek}
         >
-          <ChevronRight className="w-4 h-4" />
+          <CaretRight size={16} weight="thin" />
         </Button>
       </div>
 
