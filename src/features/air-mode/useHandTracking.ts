@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
-import { Hands, Results } from '@mediapipe/hands';
+declare const Hands: any;
+type Results = any;
 import { HandLandmark } from './types';
 
 export function useHandTracking() {
