@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkle, Check } from '@phosphor-icons/react';
 import { useNavigate } from 'react-router-dom';
@@ -55,10 +55,53 @@ const TIER_ALLOWANCE_MAP: Record<string, number> = {
   singularity: 4000,
 };
 
+const CURRENCIES = {
+  USD: { symbol: '$', label: 'USD' },
+  INR: { symbol: '₹', label: 'INR' },
+  EUR: { symbol: '€', label: 'EUR' },
+  GBP: { symbol: '£', label: 'GBP' },
+  AED: { symbol: 'د.إ', label: 'AED' },
+  SGD: { symbol: 'S$', label: 'SGD' },
+  CAD: { symbol: 'C$', label: 'CAD' },
+} as const;
+
 export default function PricingPage() {
   const navigate = useNavigate();
   const [isYearly, setIsYearly] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  
+  // Currency state
+  const [currency, setCurrency] = useState<keyof typeof CURRENCIES>('USD');
+  const [rates, setRates] = useState<Record<string, number> | null>(null);
+  const [ratesLoading, setRatesLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('https://api.exchangerate-api.com/v4/latest/USD')
+      .then((res) => res.json())
+      .then((data) => {
+        setRates(data.rates);
+        setRatesLoading(false);
+      })
+      .catch(() => {
+        setRates({ USD: 1 });
+        setRatesLoading(false);
+      });
+  }, []);
+
+  const formatAmount = (usdPrice: number) => {
+    if (!rates || !rates[currency] || currency === 'USD') {
+      return usdPrice.toLocaleString('en-US', { minimumFractionDigits: usdPrice % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+    }
+    const rate = rates[currency];
+    const converted = usdPrice * rate;
+    
+    if (currency === 'INR') {
+      return Math.round(converted).toLocaleString('en-IN');
+    }
+    
+    return parseFloat(converted.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: converted % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
+  };
+
   // Per-button state: null | 'loading' | 'success'
   const [tierButtonState, setTierButtonState] = useState<Record<string, 'loading' | 'success'>>({});
   const [packButtonState, setPackButtonState] = useState<Record<string, 'loading' | 'success'>>({});
@@ -260,71 +303,103 @@ export default function PricingPage() {
               </h1>
             </motion.div>
 
-            {/* Toggle */}
+            {/* Toggle Row */}
             <motion.div
               initial={{ opacity: 0, y: -12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, ease: 'easeOut', delay: 0.05 }}
-              className="flex justify-center items-center gap-3 mb-16"
+              className="flex justify-center items-center gap-4 mb-16 flex-wrap"
             >
-              <div
-                className="flex p-1"
-                style={{
-                  background: '#1A1A1A',
-                  border: '1px solid rgba(51,51,51,0.5)',
-                  borderRadius: '8px',
-                }}
-              >
-                <button
-                  onClick={() => setIsYearly(false)}
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex p-1"
                   style={{
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontSize: '11px',
-                    letterSpacing: '0.1em',
-                    padding: '8px 20px',
-                    borderRadius: '6px',
-                    transition: 'all 0.2s ease',
-                    background: !isYearly ? '#292929' : 'transparent',
-                    border: !isYearly ? '1px solid #333333' : '1px solid transparent',
-                    color: !isYearly ? '#FFFFFF' : '#999999',
-                    cursor: 'pointer',
+                    background: '#1A1A1A',
+                    border: '1px solid rgba(51,51,51,0.5)',
+                    borderRadius: '8px',
                   }}
                 >
-                  MONTHLY
-                </button>
-                <button
-                  onClick={() => setIsYearly(true)}
-                  style={{
-                    fontFamily: "'Orbitron', sans-serif",
-                    fontSize: '11px',
-                    letterSpacing: '0.1em',
-                    padding: '8px 20px',
-                    borderRadius: '6px',
-                    transition: 'all 0.2s ease',
-                    background: isYearly ? '#292929' : 'transparent',
-                    border: isYearly ? '1px solid #333333' : '1px solid transparent',
-                    color: isYearly ? '#FFFFFF' : '#999999',
-                    cursor: 'pointer',
-                  }}
-                >
-                  YEARLY
-                </button>
+                  <button
+                    onClick={() => setIsYearly(false)}
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: '11px',
+                      letterSpacing: '0.1em',
+                      padding: '8px 20px',
+                      borderRadius: '6px',
+                      transition: 'all 0.2s ease',
+                      background: !isYearly ? '#292929' : 'transparent',
+                      border: !isYearly ? '1px solid #333333' : '1px solid transparent',
+                      color: !isYearly ? '#FFFFFF' : '#999999',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    MONTHLY
+                  </button>
+                  <button
+                    onClick={() => setIsYearly(true)}
+                    style={{
+                      fontFamily: "'Orbitron', sans-serif",
+                      fontSize: '11px',
+                      letterSpacing: '0.1em',
+                      padding: '8px 20px',
+                      borderRadius: '6px',
+                      transition: 'all 0.2s ease',
+                      background: isYearly ? '#292929' : 'transparent',
+                      border: isYearly ? '1px solid #333333' : '1px solid transparent',
+                      color: isYearly ? '#FFFFFF' : '#999999',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    YEARLY
+                  </button>
+                </div>
+                {isYearly && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      fontFamily: "'Space Mono', monospace",
+                      fontSize: '10px',
+                      letterSpacing: '0.12em',
+                      color: '#45A199',
+                    }}
+                  >
+                    SAVE UP TO 35%
+                  </motion.span>
+                )}
               </div>
-              {isYearly && (
-                <motion.span
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2 }}
+
+              <div style={{ position: 'relative' }}>
+                <select
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value as keyof typeof CURRENCIES)}
                   style={{
+                    background: '#1A1A1A',
+                    border: '1px solid #333333',
+                    borderRadius: '6px',
+                    padding: '6px 12px',
+                    color: '#FFFFFF',
                     fontFamily: "'Space Mono', monospace",
-                    fontSize: '10px',
-                    letterSpacing: '0.12em',
-                    color: '#45A199',
+                    fontSize: '11px',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    minWidth: '80px',
                   }}
+                  disabled={ratesLoading}
                 >
-                  SAVE UP TO 35%
-                </motion.span>
-              )}
+                  {ratesLoading ? (
+                    <option value="USD">Loading rates...</option>
+                  ) : (
+                    Object.entries(CURRENCIES).map(([code, { symbol }]) => (
+                      <option key={code} value={code}>
+                        {symbol} {code}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
             </motion.div>
 
             {/* Tier Cards */}
@@ -428,7 +503,7 @@ export default function PricingPage() {
                             color: '#999999',
                           }}
                         >
-                          $
+                          {CURRENCIES[currency].symbol}
                         </span>
                         <motion.span
                           key={isYearly ? 'yearly' : 'monthly'}
@@ -443,7 +518,7 @@ export default function PricingPage() {
                             lineHeight: 1,
                           }}
                         >
-                          {isYearly ? tier.priceYearly : tier.priceMonthly}
+                          {formatAmount(isYearly ? tier.priceYearly : tier.priceMonthly)}
                         </motion.span>
                         <span
                           style={{
@@ -466,7 +541,7 @@ export default function PricingPage() {
                             marginTop: '6px',
                           }}
                         >
-                          billed ${tier.priceYearlyTotal} annually
+                          billed {CURRENCIES[currency].symbol}{formatAmount(tier.priceYearlyTotal)} annually
                         </motion.div>
                       )}
                     </div>
@@ -758,7 +833,7 @@ export default function PricingPage() {
                           marginBottom: '24px',
                         }}
                       >
-                        ${pack.price}
+                        {CURRENCIES[currency].symbol}{formatAmount(parseFloat(pack.price))}
                       </div>
                       <button
                         onClick={() => !isLoading && !isSuccess && handleTopUp(pack.name)}
