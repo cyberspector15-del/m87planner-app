@@ -62,7 +62,6 @@ export const useQuickStats = () => {
         weekTotalResult,
         weekCompletedResult,
         todaySessionsResult,
-        allSessionsTestResult,
       ] = await Promise.all([
         // Tasks completed today
         supabase
@@ -106,12 +105,6 @@ export const useQuickStats = () => {
           .eq("user_id", user.id)
           .gt("focus_minutes_completed", 0)
           .gte("created_at", startOfTodayISO),
-
-        // TEST: ALL focus_sessions for this user (No date filter)
-        supabase
-          .from("focus_sessions")
-          .select("focus_minutes_completed, created_at, user_id")
-          .eq("user_id", user.id)
       ]);
 
       // Calculate focus time from focus_sessions
@@ -119,15 +112,6 @@ export const useQuickStats = () => {
         return sum + (session.focus_minutes_completed || 0);
       }, 0) ?? 0;
 
-      console.log('--- DEEP WORK DEBUG START ---');
-      console.log('USER ID:', user?.id);
-      console.log('START OF TODAY (ISO):', startOfTodayISO);
-      console.log('TODAY SESSIONS RESULT:', todaySessionsResult.data);
-      console.log('TODAY SESSIONS ERROR:', todaySessionsResult.error);
-      console.log('ALL SESSIONS (NO DATE FILTER):', allSessionsTestResult.data);
-      console.log('ALL SESSIONS ERROR:', allSessionsTestResult.error);
-      console.log('TOTAL MINUTES CALCULATED:', totalMinutes);
-      console.log('--- DEEP WORK DEBUG END ---');
 
       const focusHours = (totalMinutes / 60).toFixed(1);
 

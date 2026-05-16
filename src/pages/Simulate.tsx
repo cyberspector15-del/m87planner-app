@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { CommitModal } from "@/components/CommitModal";
 import UpgradeModal from "@/components/UpgradeModal";
+import { useFlux } from "../hooks/useFlux";
 
 /* ═══════════════════════════════════════════════════════════════════
    SIMULATE V8 — Cinematic Animation Layer
@@ -918,7 +919,7 @@ const SimulateInputWrapper = ({
   const [inputError, setInputError]  = useState("");
   const [displayedLabel, setDisplayedLabel] = useState("RUN SIMULATION");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [userFlux, setUserFlux] = useState(45); // TODO: fetch from Supabase user_credits table
+  const { balance, spendFlux, canAfford } = useFlux();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Button text typewriter: types out label changes */
@@ -950,7 +951,9 @@ const SimulateInputWrapper = ({
     if (btnLabel !== "RUN SIMULATION") return;
 
     const SIMULATION_COST = 200;
-    if (userFlux < SIMULATION_COST) {
+    console.log('canAfford simulation:', canAfford('simulation'));
+    console.log('current balance:', balance);
+    if (!canAfford('simulation')) {
       setShowUpgradeModal(true);
       return; // stop execution — don't run simulation
     }
@@ -963,6 +966,9 @@ const SimulateInputWrapper = ({
     setTimeout(() => setBtnLabel("ANALYZING..."), 1200);
     try {
       const result = await callNvidiaAPI(trimmed);
+      console.log('simulation success, spending FLUX...');
+      const spent = await spendFlux('simulation');
+      console.log('spendFlux result:', spent);
       setBtnLabel("RUN SIMULATION");
       onComplete(result, trimmed);
     } catch (err) {
@@ -1143,7 +1149,7 @@ const SimulateInputWrapper = ({
         type="flux"
         featureName="Consequence Simulator"
         fluxRequired={200}
-        fluxAvailable={userFlux}
+        fluxAvailable={balance}
       />
     </motion.div>
   );

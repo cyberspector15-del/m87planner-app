@@ -39,6 +39,37 @@ const parseScheduledFor = (value: string | undefined): string | null => {
   return parsed.toISOString();
 };
 
+function parseTimeValue(time: string): string {
+  if (!time) return '09:00:00';
+  
+  // Already valid HH:MM format
+  if (/^\d{2}:\d{2}(:\d{2})?$/.test(time)) {
+    const parts = time.split(':');
+    return `${parts[0].padStart(2,'0')}:${parts[1].padStart(2,'0')}:00`;
+  }
+  
+  // Natural language time parsing
+  const lower = time.toLowerCase();
+  if (lower.includes('morning')) return '09:00:00';
+  if (lower.includes('afternoon')) return '14:00:00';
+  if (lower.includes('evening')) return '18:00:00';
+  if (lower.includes('night')) return '21:00:00';
+  if (lower.includes('noon')) return '12:00:00';
+  
+  // Try to parse "9am", "10:30am" etc
+  const ampm = lower.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/);
+  if (ampm) {
+    let hours = parseInt(ampm[1]);
+    const minutes = ampm[2] ? parseInt(ampm[2]) : 0;
+    if (ampm[3] === 'pm' && hours !== 12) hours += 12;
+    if (ampm[3] === 'am' && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:00`;
+  }
+  
+  // Default fallback
+  return '09:00:00';
+}
+
 export const useNLPParse = () => {
   const [isParsing, setIsParsing] = useState(false);
   const { toast } = useToast();
@@ -209,9 +240,8 @@ export const useNLPParse = () => {
 
               const duration = r.duration_minutes || 30;
               
-              // Handle time_of_day (AI might return HH:mm or HH:mm:ss)
-              let windowStart = r.time_of_day || "09:00:00";
-              if (windowStart.split(":").length === 2) windowStart += ":00";
+              // Handle time_of_day using the custom parser
+              const windowStart = parseTimeValue(r.time_of_day || "09:00:00");
 
               // Calculate window_end
               const dummyDate = new Date();

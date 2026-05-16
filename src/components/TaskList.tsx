@@ -23,6 +23,8 @@ import { cn } from '@/lib/utils';
 import { Task } from '@/types/database';
 import { useTasks, useDeleteTask, useToggleTaskComplete } from '@/hooks/useTasks';
 import TaskDialog from './TaskDialog';
+import { useSubscription } from '@/hooks/useSubscription';
+import UpgradeModal from './UpgradeModal';
 
 const getPriorityConfig = (priority: number) => {
   switch (priority) {
@@ -49,6 +51,8 @@ const getDeadlineLabel = (deadline: string | null) => {
 };
 
 const TaskList = () => {
+  const { isActive } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { data: tasks, isLoading, error } = useTasks();
   const deleteTask = useDeleteTask();
   const toggleComplete = useToggleTaskComplete();
@@ -60,6 +64,7 @@ const TaskList = () => {
 
   const incompleteTasks = tasks?.filter((t) => !t.completed) || [];
   const completedTasks = tasks?.filter((t) => t.completed) || [];
+
 
   const handleEdit = (task: Task) => {
     setEditingTask(task);
@@ -200,7 +205,13 @@ const TaskList = () => {
               variant="cosmic-outline"
               size="sm"
               className="gap-1"
-              onClick={() => setDialogOpen(true)}
+              onClick={() => {
+                if (!isActive) {
+                  setShowUpgradeModal(true);
+                  return;
+                }
+                setDialogOpen(true);
+              }}
             >
               <Plus size={16} weight="thin" />
               Add Task
@@ -227,6 +238,14 @@ const TaskList = () => {
             incompleteTasks.map((task, index) => renderTask(task, index))
           )}
         </div>
+
+        <UpgradeModal
+          isOpen={showUpgradeModal}
+          onClose={() => setShowUpgradeModal(false)}
+          type="tier"
+          featureName="Add Task"
+          requiredTier="event_horizon"
+        />
 
         {completedTasks.length > 0 && (
           <>

@@ -382,7 +382,7 @@ const QuickStats = () => {
                     const startTime = format(new Date(session.focus_started_at), "h:mm a");
                     const duration = session.focus_minutes_completed;
                     const breakTierLabel = session.break_tier.replace('_', ' ').toUpperCase();
-                    
+
                     return (
                       <motion.div
                         key={session.id}
@@ -456,7 +456,7 @@ const QuickStats = () => {
                     <span className="font-display text-2xl font-bold text-amber-400">{stats?.streak || 0}</span>
                     <span className="text-sm text-muted-foreground">day streak</span>
                   </motion.div>
-                  
+
                   {isMilestone && currentMilestone && (
                     <motion.button
                       initial={{ opacity: 0, scale: 0.8 }}
@@ -473,7 +473,7 @@ const QuickStats = () => {
                     </motion.button>
                   )}
                 </div>
-                
+
                 {nextMilestone && !isMilestone && (
                   <motion.p
                     initial={{ opacity: 0 }}
@@ -496,15 +496,14 @@ const QuickStats = () => {
                         initial={{ opacity: 0, scale: 0 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.4 + i * 0.01, type: "spring", stiffness: 300 }}
-                        className={`aspect-square rounded-md flex items-center justify-center text-xs font-medium transition-all ${
-                          day.completed > 0
+                        className={`aspect-square rounded-md flex items-center justify-center text-xs font-medium transition-all ${day.completed > 0
                             ? day.completed >= 3
                               ? "bg-amber-400 text-black"
                               : day.completed >= 2
-                              ? "bg-amber-500/70 text-white"
-                              : "bg-amber-500/40 text-amber-200"
+                                ? "bg-amber-500/70 text-white"
+                                : "bg-amber-500/40 text-amber-200"
                             : "bg-muted/30 text-muted-foreground/50"
-                        } ${day.isToday ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-background" : ""}`}
+                          } ${day.isToday ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-background" : ""}`}
                         title={`${format(parseISO(day.date), "MMM d")}: ${day.completed} task${day.completed !== 1 ? "s" : ""}`}
                       >
                         {day.completed > 0 ? day.completed : ""}
@@ -629,7 +628,7 @@ const QuickStats = () => {
               {selectedDate && format(parseISO(selectedDate), "EEEE, MMMM d")}
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-3 mt-4">
             {tasksLoading ? (
               <div className="space-y-2">
@@ -638,8 +637,8 @@ const QuickStats = () => {
               </div>
             ) : dayTasks && dayTasks.length > 0 ? (
               dayTasks.map((task) => (
-                <div 
-                  key={task.id} 
+                <div
+                  key={task.id}
                   className="flex items-start gap-3 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
                 >
                   <CheckCircle size={20} weight="thin" className="text-emerald-400 mt-0.5 shrink-0" />

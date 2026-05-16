@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkle, Check } from '@phosphor-icons/react';
-import { createCheckoutSession } from '@/lib/stripe';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import Header from "@/components/Header";
 
 const PRICE_IDS = {
@@ -34,23 +35,108 @@ const itemVariants = {
   },
 };
 
-export default function PricingPage() {
-  const [isYearly, setIsYearly] = useState(false);
-  const [loadingPriceId, setLoadingPriceId] = useState<string | null>(null);
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+const TIER_KEY_MAP: Record<string, string> = {
+  'EVENT HORIZON': 'event_horizon',
+  'ADVANCE': 'advance',
+  'APEX': 'apex',
+  'SINGULARITY': 'singularity',
+};
 
-  const handleCheckout = async (priceId: string) => {
-    setLoadingPriceId(priceId);
+const PACK_CREDITS: Record<string, number> = {
+  'FLUX BOOST': 200,
+  'FLUX SURGE': 500,
+  'FLUX OVERDRIVE': 1200,
+};
+
+const TIER_ALLOWANCE_MAP: Record<string, number> = {
+  event_horizon: 500,
+  advance: 1000,
+  apex: 2000,
+  singularity: 4000,
+};
+
+export default function PricingPage() {
+  const navigate = useNavigate();
+  const [isYearly, setIsYearly] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  // Per-button state: null | 'loading' | 'success'
+  const [tierButtonState, setTierButtonState] = useState<Record<string, 'loading' | 'success'>>({});
+  const [packButtonState, setPackButtonState] = useState<Record<string, 'loading' | 'success'>>({});
+
+  const handleGetStarted = async (tierName: string) => {
+    const tierKey = TIER_KEY_MAP[tierName];
+    setTierButtonState((s) => ({ ...s, [tierName]: 'loading' }));
     try {
-      await createCheckoutSession(priceId);
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+      await supabase
+        .from('profiles')
+        .update({ subscription_tier: tierKey, subscription_status: 'active' })
+        .eq('user_id', user.id);
+      const allowance = TIER_ALLOWANCE_MAP[tierKey];
+      await supabase
+        .from('user_credits')
+        .upsert({
+          user_id: user.id,
+          balance: allowance,
+          monthly_allowance: allowance,
+          last_reset_date: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
+      setTierButtonState((s) => ({ ...s, [tierName]: 'success' }));
+      setTimeout(() => navigate('/dashboard'), 1500);
     } finally {
-      setLoadingPriceId(null);
+      // keep 'success' visible until navigation
     }
   };
 
-  const getTierPriceId = (tierName: string, yearly: boolean) => {
-    const tierIds = PRICE_IDS[tierName as keyof Omit<typeof PRICE_IDS, 'addons'>];
-    return yearly ? tierIds.annual : tierIds.monthly;
+  const handleTopUp = async (packName: string) => {
+    const credits = PACK_CREDITS[packName];
+    setPackButtonState((s) => ({ ...s, [packName]: 'loading' }));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const user = session?.user;
+      if (!user) return;
+
+      // Check active subscription
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status')
+        .eq('user_id', user.id)
+        .single();
+      if (profile?.subscription_status !== 'active') {
+        alert('You need an active subscription first.');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setPackButtonState((s) => { const n = { ...s }; delete n[packName]; return n; });
+        return;
+      }
+
+      // Upsert user_credits and add credits
+      const { data: existing } = await supabase
+        .from('user_credits')
+        .select('balance')
+        .eq('user_id', user.id)
+        .single();
+      const newBalance = (existing?.balance ?? 0) + credits;
+      await supabase
+        .from('user_credits')
+        .upsert({ user_id: user.id, balance: newBalance }, { onConflict: 'user_id' });
+      await supabase
+        .from('credit_transactions')
+        .insert({
+          user_id: user.id,
+          amount: credits,
+          action_type: 'addon_purchase',
+          description: `FLUX Top-Up — ${packName}`,
+        });
+      setPackButtonState((s) => ({ ...s, [packName]: 'success' }));
+      setTimeout(() => {
+        setPackButtonState((s) => { const n = { ...s }; delete n[packName]; return n; });
+      }, 1500);
+    } catch {
+      setPackButtonState((s) => { const n = { ...s }; delete n[packName]; return n; });
+    }
   };
 
   const tiers = [
@@ -127,6 +213,26 @@ export default function PricingPage() {
     <div className="min-h-screen text-white relative" style={{ backgroundColor: '#000000', fontFamily: "'Inter', sans-serif" }}>
       <div className="relative z-10">
         <Header />
+
+        {/* TEST MODE banner */}
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '16px', paddingBottom: '0' }}>
+          <div
+            style={{
+              background: '#1F1F1F',
+              border: '1px solid #E8AB30',
+              borderRadius: '20px',
+              padding: '6px 16px',
+              fontFamily: "'Space Mono', monospace",
+              fontSize: '10px',
+              color: '#E8AB30',
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+            }}
+          >
+            ⚡ TEST MODE — Payments simulated
+          </div>
+        </div>
+
         <div className="px-6 md:px-12 lg:px-24" style={{ paddingTop: '48px', paddingBottom: '96px' }}>
           <div className="max-w-7xl mx-auto">
 
@@ -231,8 +337,9 @@ export default function PricingPage() {
             >
               {tiers.map((tier) => {
                 const isSingularity = tier.variant === 'singularity';
-                const priceId = getTierPriceId(tier.name, isYearly);
-                const isLoading = loadingPriceId === priceId;
+                const btnState = tierButtonState[tier.name];
+                const isLoading = btnState === 'loading';
+                const isSuccess = btnState === 'success';
 
                 return (
                   <motion.div
@@ -366,8 +473,8 @@ export default function PricingPage() {
 
                     {/* CTA Button */}
                     <button
-                      onClick={() => handleCheckout(priceId)}
-                      disabled={isLoading}
+                      onClick={() => !isLoading && !isSuccess && handleGetStarted(tier.name)}
+                      disabled={isLoading || isSuccess}
                       style={{
                         width: '100%',
                         padding: '14px 0',
@@ -379,15 +486,17 @@ export default function PricingPage() {
                         textTransform: 'uppercase',
                         color: '#000000',
                         border: 'none',
-                        cursor: isLoading ? 'not-allowed' : 'pointer',
-                        opacity: isLoading ? 0.7 : 1,
-                        background: isSingularity
+                        cursor: (isLoading || isSuccess) ? 'not-allowed' : 'pointer',
+                        opacity: (isLoading || isSuccess) ? 0.85 : 1,
+                        background: isSuccess
+                          ? '#2EB867'
+                          : isSingularity
                           ? '#45A199'
                           : 'linear-gradient(135deg, #BFBFBF 0%, #999999 100%)',
                         transition: 'all 0.2s ease',
                       }}
                       onMouseEnter={(e) => {
-                        if (!isLoading) {
+                        if (!isLoading && !isSuccess) {
                           (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
                           if (isSingularity) {
                             (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 20px rgba(69,161,153,0.4)';
@@ -402,7 +511,7 @@ export default function PricingPage() {
                         (e.currentTarget as HTMLButtonElement).style.filter = 'none';
                       }}
                     >
-                      {isLoading ? 'INITIATING...' : 'GET STARTED'}
+                      {isLoading ? 'PROCESSING...' : isSuccess ? 'ACTIVATED ✓' : 'GET STARTED'}
                     </button>
 
                     {/* Divider */}
@@ -586,8 +695,9 @@ export default function PricingPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mx-auto">
                 {fluxPacks.map((pack) => {
-                  const packPriceId = PRICE_IDS.addons[pack.name as keyof typeof PRICE_IDS.addons];
-                  const isLoading = loadingPriceId === packPriceId;
+                  const btnState = packButtonState[pack.name];
+                  const isLoading = btnState === 'loading';
+                  const isSuccess = btnState === 'success';
                   return (
                     <motion.div
                       key={pack.name}
@@ -651,8 +761,8 @@ export default function PricingPage() {
                         ${pack.price}
                       </div>
                       <button
-                        onClick={() => handleCheckout(packPriceId)}
-                        disabled={isLoading}
+                        onClick={() => !isLoading && !isSuccess && handleTopUp(pack.name)}
+                        disabled={isLoading || isSuccess}
                         style={{
                           width: '100%',
                           padding: '12px 0',
@@ -664,13 +774,15 @@ export default function PricingPage() {
                           textTransform: 'uppercase',
                           color: '#000000',
                           border: 'none',
-                          cursor: isLoading ? 'not-allowed' : 'pointer',
-                          opacity: isLoading ? 0.7 : 1,
-                          background: 'linear-gradient(135deg, #BFBFBF 0%, #999999 100%)',
+                          cursor: (isLoading || isSuccess) ? 'not-allowed' : 'pointer',
+                          opacity: (isLoading || isSuccess) ? 0.85 : 1,
+                          background: isSuccess
+                            ? '#2EB867'
+                            : 'linear-gradient(135deg, #BFBFBF 0%, #999999 100%)',
                           transition: 'all 0.2s ease',
                         }}
                         onMouseEnter={(e) => {
-                          if (!isLoading) {
+                          if (!isLoading && !isSuccess) {
                             (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-1px)';
                             (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(1.1)';
                           }
@@ -680,7 +792,7 @@ export default function PricingPage() {
                           (e.currentTarget as HTMLButtonElement).style.filter = 'none';
                         }}
                       >
-                        {isLoading ? 'INITIATING...' : 'TOP UP'}
+                        {isLoading ? 'PROCESSING...' : isSuccess ? 'ADDED ✓' : 'TOP UP'}
                       </button>
                     </motion.div>
                   );

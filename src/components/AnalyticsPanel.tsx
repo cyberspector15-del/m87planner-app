@@ -86,6 +86,7 @@ const AnalyticsPanel = () => {
       .slice(0, 5);
   }, [tasks]);
 
+
   return (
     <div className="space-y-6 overflow-y-auto max-h-[calc(100vh-120px)] pr-2">
       {/* Stats Overview */}

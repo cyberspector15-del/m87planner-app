@@ -10,6 +10,9 @@ import { callAIGateway } from "@/lib/aiGateway";
 import ConversationModeToggle from "@/components/ai/ConversationModeToggle";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSubscription } from "@/hooks/useSubscription";
+import { useFlux } from "../hooks/useFlux";
+import UpgradeModal from "./UpgradeModal";
 
 const CONVERSATION_SYSTEM_PROMPT = `
 You are M87's AI Command — a cold, precise productivity AI. 
@@ -84,6 +87,11 @@ interface ConversationMessage {
 }
 
 const CommandCenter = ({ className }: CommandCenterProps) => {
+  const { isActive } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { canAfford, spendFlux, balance } = useFlux();
+  const [showFluxModal, setShowFluxModal] = useState(false);
+  const [blockedFeature, setBlockedFeature] = useState<{name: string, action: string, cost: number} | null>(null);
   const [input, setInput] = useState("");
   const [isSpotlightActive, setIsSpotlightActive] = useState(false);
   const [lastSuccess, setLastSuccess] = useState(false);
@@ -300,6 +308,10 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
   }, []);
 
   const handleSubmit = useCallback(async () => {
+    if (!isActive) {
+      setShowUpgradeModal(true);
+      return;
+    }
     console.log("submit fired, value:", input);
     if (!input.trim()) {
       console.warn("empty input");
@@ -313,6 +325,11 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
     const command = input.trim();
     
     if (conversationMode) {
+      if (!canAfford('conversation_mode')) {
+        setBlockedFeature({ name: 'Conversation Mode', action: 'conversation_mode', cost: 30 });
+        setShowFluxModal(true);
+        return;
+      }
       // 1. Immediate UI update
       const userMessage = { role: 'user' as const, content: command };
       const updatedHistory = [...conversationHistory, userMessage];
@@ -343,6 +360,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
         console.log("gateway response:", response);
         
         if (response.success) {
+          await spendFlux('conversation_mode');
           const content = response.content.trim();
           
           if (content.startsWith('{"action":"INSERT"')) {
@@ -424,6 +442,12 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
       }
       return;
     }
+    
+    if (!canAfford('ai_command')) {
+      setBlockedFeature({ name: 'AI Command', action: 'ai_command', cost: 15 });
+      setShowFluxModal(true);
+      return;
+    }
 
     // Existing single-query logic (unchanged)
     const context = undefined; // Single query doesn't use context here
@@ -432,6 +456,7 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
     try {
       console.log("calling parseCommand...");
       result = await parseCommand(command, context);
+      await spendFlux('ai_command');
       console.log("parseCommand result:", result);
     } catch (err) {
       console.error("parseCommand FAILED:", err);
@@ -946,6 +971,21 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
           </div>
         </motion.div>
       </div>
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        type="tier"
+        featureName="AI Command"
+        requiredTier="event_horizon"
+      />
+      <UpgradeModal
+        isOpen={showFluxModal}
+        onClose={() => { setShowFluxModal(false); setBlockedFeature(null) }}
+        type="flux"
+        featureName={blockedFeature?.name ?? ''}
+        fluxRequired={blockedFeature?.cost ?? 0}
+        fluxAvailable={balance}
+      />
     </>
   );
 };

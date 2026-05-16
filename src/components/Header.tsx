@@ -73,11 +73,11 @@ const Header = () => {
               asChild
               variant="cosmic-ghost" 
               size="sm" 
-              className={`gap-2${location.pathname === "/" ? " active" : ""}`}
-              data-active={location.pathname === "/"}
+              className={`gap-2${location.pathname === "/dashboard" ? " active" : ""}`}
+              data-active={location.pathname === "/dashboard"}
               onClick={() => vibrate("light")}
             >
-              <Link to="/">
+              <Link to="/dashboard">
                 <Calendar size={16} weight="thin" />
                 Dashboard
               </Link>
@@ -163,6 +163,19 @@ const Header = () => {
                 </div>
               </SheetContent>
             </Sheet>
+
+            <Button
+              variant="cosmic-ghost"
+              size="sm"
+              className={`gap-2${location.pathname === "/pricing" ? " active" : ""}`}
+              data-active={location.pathname === "/pricing"}
+              onClick={() => {
+                vibrate("light");
+                navigate("/pricing");
+              }}
+            >
+              Pricing
+            </Button>
           </nav>
 
           {/* Actions */}

@@ -11,6 +11,8 @@ import { cn } from "@/lib/utils";
 import { useAutoPlan } from "@/hooks/useAutoPlan";
 import { useSmartReschedule } from "@/hooks/useSmartReschedule";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useFlux } from "../hooks/useFlux";
+
 import {
   Dialog,
   DialogContent,
@@ -32,6 +34,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import AIProcessingOverlay from "./AIProcessingOverlay";
 import WinScreen from "./WinScreen";
+import { useSubscription } from "@/hooks/useSubscription";
+import UpgradeModal from "./UpgradeModal";
 import type { ScheduledEvent } from "@/hooks/useAutoPlan";
 import type { RescheduledTask } from "@/hooks/useSmartReschedule";
 
@@ -52,6 +56,12 @@ function safeFormat(dateStr: string | null | undefined, fmt: string, fallback = 
 }
 
 const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
+  const { isActive } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeModalFeature, setUpgradeModalFeature] = useState("");
+  const { canAfford, spendFlux, balance } = useFlux();
+  const [showFluxModal, setShowFluxModal] = useState(false);
+  const [blockedFeature, setBlockedFeature] = useState<{name: string, action: string, cost: number} | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [results, setResults] = useState<ScheduledEvent[]>([]);
@@ -78,6 +88,11 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
   const isManualMode = settings.planningMode === "manual";
 
   const initiateAutoPlan = async () => {
+    if (!isActive) {
+      setUpgradeModalFeature("AI Auto-Scheduler");
+      setShowUpgradeModal(true);
+      return;
+    }
     if (settings.askBeforeReschedule) {
       setShowConfirmDialog(true);
       return;
@@ -86,6 +101,15 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
   };
 
   const executeAutoPlan = async () => {
+    console.log('executeAutoPlan called');
+    console.log('canAfford auto_plan:', canAfford('auto_plan'));
+    console.log('balance:', balance);
+    if (!canAfford('auto_plan')) {
+      setBlockedFeature({ name: 'AI Auto-Scheduler', action: 'auto_plan', cost: 50 });
+      setShowFluxModal(true);
+      return;
+    }
+    console.log('FLUX check passed, calling autoPlan...');
     setShowConfirmDialog(false);
     setShowOverlay(true);
     setIsComplete(false);
@@ -93,6 +117,8 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
 
     try {
       const result = await autoPlan(selectedDate);
+      await spendFlux('auto_plan');
+      console.log('spent 50 FLUX for auto_plan');
 
       if (result?.scheduled && result.scheduled.length > 0) {
         setResults(result.scheduled);
@@ -122,6 +148,16 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
 
   // ── Smart Reschedule handlers ──
   const handleSmartReschedule = async () => {
+    if (!canAfford('smart_reschedule')) {
+      setBlockedFeature({ name: 'Smart Reschedule', action: 'smart_reschedule', cost: 20 });
+      setShowFluxModal(true);
+      return;
+    }
+    if (!isActive) {
+      setUpgradeModalFeature("Smart Reschedule");
+      setShowUpgradeModal(true);
+      return;
+    }
     setShowRescheduleOverlay(true);
     setIsRescheduleComplete(false);
     setRescheduleError(null);
@@ -132,6 +168,7 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
       if (result) {
         setRescheduleResults(Array.isArray(result.rescheduled) ? result.rescheduled : []);
         setRescheduleSummary(typeof result.summary === "string" ? result.summary : "");
+        await spendFlux('smart_reschedule');
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Smart reschedule failed unexpectedly.";
@@ -442,6 +479,22 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        type="tier"
+        featureName={upgradeModalFeature}
+        requiredTier="event_horizon"
+      />
+      <UpgradeModal
+        isOpen={showFluxModal}
+        onClose={() => { setShowFluxModal(false); setBlockedFeature(null) }}
+        type="flux"
+        featureName={blockedFeature?.name ?? ''}
+        fluxRequired={blockedFeature?.cost ?? 0}
+        fluxAvailable={balance}
+      />
     </>
   );
 };

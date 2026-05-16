@@ -7,8 +7,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useFocusSession } from '@/hooks/useFocusSession';
 import { BreakTier, BreakActivity } from '@/types/focusMode';
 import { GameController, ArrowRight, Flame, Waves, ArrowSquareOut } from "@phosphor-icons/react";
+import { useSubscription } from '@/hooks/useSubscription';
+import UpgradeModal from '../UpgradeModal';
 
 export const FocusModeSetup = () => {
+  const { isActive } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createSession, isLoading } = useFocusSession();
@@ -50,6 +54,10 @@ export const FocusModeSetup = () => {
   };
 
   const handleLaunch = async () => {
+    if (!isActive) {
+      setShowUpgradeModal(true);
+      return;
+    }
     if (!isFormValid() || !user || isLoading) return;
     
     const session = await createSession(user.id, duration!, breakTier!, breakActivity);
@@ -207,6 +215,13 @@ export const FocusModeSetup = () => {
         </section>
 
       </div>
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        type="tier"
+        featureName="Focus Mode"
+        requiredTier="event_horizon"
+      />
     </div>
   );
 };

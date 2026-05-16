@@ -14,8 +14,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useRoutines, useDeleteRoutine, Routine } from '@/hooks/useRoutines';
 import RoutineDialog from './RoutineDialog';
+import { useSubscription } from '@/hooks/useSubscription';
+import UpgradeModal from './UpgradeModal';
 
 const RoutineList = () => {
+  const { isActive } = useSubscription();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { data: routines, isLoading } = useRoutines();
   const deleteRoutine = useDeleteRoutine();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -28,6 +32,10 @@ const RoutineList = () => {
   };
 
   const handleCreate = () => {
+    if (!isActive) {
+      setShowUpgradeModal(true);
+      return;
+    }
     setSelectedRoutine(null);
     setDialogOpen(true);
   };
@@ -66,6 +74,7 @@ const RoutineList = () => {
       default: return 'bg-muted text-muted-foreground';
     }
   };
+
 
   return (
     <div className="glass rounded-xl p-6">
@@ -194,6 +203,14 @@ const RoutineList = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        type="tier"
+        featureName="Add Routine"
+        requiredTier="event_horizon"
+      />
     </div>
   );
 };
