@@ -36,7 +36,7 @@ export function useFlux() {
 
   const fetchOrInitCredits = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session || !isActive) {
+    if (!session) {
       setState({ balance: 0, monthlyAllowance: 0, isLoading: false })
       return
     }
@@ -49,11 +49,12 @@ export function useFlux() {
       .single()
 
     if (!existing) {
+      const initialBalance = isActive ? monthlyAllowance : 0
       const { data: newRecord } = await supabase
         .from('user_credits')
         .insert({
           user_id: userId,
-          balance: monthlyAllowance,
+          balance: initialBalance,
           monthly_allowance: monthlyAllowance,
           last_reset_date: new Date().toISOString()
         })
@@ -61,47 +62,57 @@ export function useFlux() {
         .single()
 
       setState({
-        balance: newRecord?.balance ?? monthlyAllowance,
+        balance: newRecord?.balance ?? initialBalance,
         monthlyAllowance,
         isLoading: false
       })
       return
     }
 
-    const lastReset = new Date(existing.last_reset_date)
-    const now = new Date()
-    const monthsPassed = (now.getFullYear() - lastReset.getFullYear()) 
-      * 12 + (now.getMonth() - lastReset.getMonth())
+    // Monthly reset logic only for active subscriptions
+    if (isActive) {
+      const lastReset = new Date(existing.last_reset_date)
+      const now = new Date()
+      const monthsPassed = (now.getFullYear() - lastReset.getFullYear()) 
+        * 12 + (now.getMonth() - lastReset.getMonth())
 
-    if (monthsPassed >= 1) {
-      const cap = monthlyAllowance * 2
-      const newBalance = Math.min(
-        existing.balance + monthlyAllowance, cap
-      )
-      await supabase
-        .from('user_credits')
-        .update({
-          balance: newBalance,
-          monthly_allowance: monthlyAllowance,
-          last_reset_date: now.toISOString(),
-          updated_at: now.toISOString()
+      if (monthsPassed >= 1) {
+        const cap = monthlyAllowance * 2
+        const newBalance = Math.min(
+          existing.balance + monthlyAllowance, cap
+        )
+        await supabase
+          .from('user_credits')
+          .update({
+            balance: newBalance,
+            monthly_allowance: monthlyAllowance,
+            last_reset_date: now.toISOString(),
+            updated_at: now.toISOString()
+          })
+          .eq('user_id', userId)
+
+        await supabase
+          .from('credit_transactions')
+          .insert({
+            user_id: userId,
+            amount: monthlyAllowance,
+            action_type: 'monthly_reset',
+            description: `Monthly FLUX — ${tier}`
+          })
+
+        setState({ balance: newBalance, monthlyAllowance, isLoading: false })
+      } else {
+        setState({
+          balance: existing.balance,
+          monthlyAllowance,
+          isLoading: false
         })
-        .eq('user_id', userId)
-
-      await supabase
-        .from('credit_transactions')
-        .insert({
-          user_id: userId,
-          amount: monthlyAllowance,
-          action_type: 'monthly_reset',
-          description: `Monthly FLUX — ${tier}`
-        })
-
-      setState({ balance: newBalance, monthlyAllowance, isLoading: false })
+      }
     } else {
+      // Not active but has existing credits
       setState({
         balance: existing.balance,
-        monthlyAllowance,
+        monthlyAllowance: 0,
         isLoading: false
       })
     }

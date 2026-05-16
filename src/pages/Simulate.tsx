@@ -921,6 +921,7 @@ const SimulateInputWrapper = ({
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { balance, spendFlux, canAfford } = useFlux();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const analyzingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Button text typewriter: types out label changes */
   useEffect(() => {
@@ -963,22 +964,25 @@ const SimulateInputWrapper = ({
     setInputError("");
     onRunStart();
     setBtnLabel("INITIALIZING...");
-    setTimeout(() => setBtnLabel("ANALYZING..."), 1200);
+    if (analyzingTimeoutRef.current) clearTimeout(analyzingTimeoutRef.current);
+    analyzingTimeoutRef.current = setTimeout(() => setBtnLabel("ANALYZING..."), 1200);
     try {
       const result = await callNvidiaAPI(trimmed);
+      if (analyzingTimeoutRef.current) clearTimeout(analyzingTimeoutRef.current);
       console.log('simulation success, spending FLUX...');
       const spent = await spendFlux('simulation');
       console.log('spendFlux result:', spent);
       setBtnLabel("RUN SIMULATION");
       onComplete(result, trimmed);
     } catch (err) {
+      if (analyzingTimeoutRef.current) clearTimeout(analyzingTimeoutRef.current);
       setBtnLabel("RUN SIMULATION");
       const raw = err instanceof Error ? err.message : "UNKNOWN";
       if (raw === "API_KEY_NOT_CONFIGURED") onError("API KEY NOT CONFIGURED — ADD VITE_NVIDIA_API_KEY TO .ENV");
       else if (raw === "PARSE_FAILURE" || raw === "EMPTY_RESPONSE") onError("SIMULATION FAILED — INVALID RESPONSE FROM MODEL");
       else onError("SIMULATION FAILED — CHECK API CONNECTION");
     }
-  }, [btnLabel, value, onRunStart, onComplete, onError]);
+  }, [btnLabel, value, onRunStart, onComplete, onError, spendFlux]);
 
   const isRunning = btnLabel !== "RUN SIMULATION";
 
@@ -1284,7 +1288,7 @@ const Simulate = () => {
     } catch {
       // Handle silently
     }
-  }, []);
+  }, [setCurrentSimulationId]);
 
   const handleError = useCallback((msg: string) => {
     setErrorMessage(msg);
