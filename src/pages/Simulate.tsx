@@ -8,6 +8,11 @@ import { CommitModal } from "@/components/CommitModal";
 import UpgradeModal from "@/components/UpgradeModal";
 import { useFlux } from "../hooks/useFlux";
 
+interface SimulateProps {
+  /** Mobile shell uses its own header; desktop keeps Header by default. */
+  hideHeader?: boolean;
+}
+
 /* ═══════════════════════════════════════════════════════════════════
    SIMULATE V8 — Cinematic Animation Layer
    All easing: ease-out or cubic-bezier only. Zero spring. Zero bounce.
@@ -19,7 +24,7 @@ import { useFlux } from "../hooks/useFlux";
 const CyanSmoke = ({ revealed, full, label }: { revealed: string; full: string; label?: string }) => {
   const isTyping = revealed.length > 0 && revealed.length < full.length;
   const glowLength = 10;
-  
+
   const recentChars = isTyping ? revealed.slice(Math.max(0, revealed.length - glowLength)) : "";
   const olderChars = isTyping ? revealed.slice(0, Math.max(0, revealed.length - glowLength)) : revealed;
 
@@ -35,9 +40,9 @@ const CyanSmoke = ({ revealed, full, label }: { revealed: string; full: string; 
 
   return (
     <>
-      <span className="typed-old" style={{ 
+      <span className="typed-old" style={{
         color: "inherit",
-        transition: "text-shadow 0.6s ease-out, color 0.6s ease-out" 
+        transition: "text-shadow 0.6s ease-out, color 0.6s ease-out"
       }}>
         {renderText(olderChars)}
       </span>
@@ -639,11 +644,11 @@ const BranchCard = ({
 
         {/* Signal strength — animated bars fill when card is active */}
         <motion.div
-           variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: d(0.4), ease: EASE_OUT, delay: sd(4) } } }}
-           initial="hidden"
-           animate="show"
-           className="flex items-center gap-4 pt-5"
-           style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}
+          variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: d(0.4), ease: EASE_OUT, delay: sd(4) } } }}
+          initial="hidden"
+          animate="show"
+          className="flex items-center gap-4 pt-5"
+          style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}
         >
           <span className="font-mono text-[9px] tracking-[0.15em] uppercase" style={{ color: "rgba(255,255,255,0.25)" }}>
             Branch Signal Strength
@@ -653,9 +658,9 @@ const BranchCard = ({
 
         {/* ── Commit Timeline Button ── */}
         <motion.div
-           variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: d(0.4), ease: EASE_OUT, delay: sd(5) } } }}
-           initial="hidden"
-           animate="show"
+          variants={{ hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0, transition: { duration: d(0.4), ease: EASE_OUT, delay: sd(5) } } }}
+          initial="hidden"
+          animate="show"
         >
           <button
             onClick={() => onCommit(branch)}
@@ -833,10 +838,10 @@ const IntelligenceBrief = ({ result, onCommit }: { result: SimulationResult, onC
           ],
         }}
         transition={{
-          opacity:    { duration: d(0.7), ease: EASE_OUT, delay: recommendedDelay },
-          y:          { duration: d(0.7), ease: EASE_OUT, delay: recommendedDelay },
-          filter:     { duration: d(0.7), ease: EASE_OUT, delay: recommendedDelay },
-          boxShadow:  { duration: d(1.2), ease: "easeInOut", delay: recommendedDelay + 0.1, times: [0, 0.5, 1] },
+          opacity: { duration: d(0.7), ease: EASE_OUT, delay: recommendedDelay },
+          y: { duration: d(0.7), ease: EASE_OUT, delay: recommendedDelay },
+          filter: { duration: d(0.7), ease: EASE_OUT, delay: recommendedDelay },
+          boxShadow: { duration: d(1.2), ease: "easeInOut", delay: recommendedDelay + 0.1, times: [0, 0.5, 1] },
         }}
       >
         {/* Animated left gold border: scaleY 0 → 1 from top */}
@@ -898,7 +903,7 @@ const EXAMPLE_PROMPTS = [
 ];
 
 type SimState = "idle" | "loading" | "ready" | "error";
-type BtnLabel = "RUN SIMULATION" | "INITIALIZING..." | "ANALYZING...";
+type BtnLabel = "RUN SIMULATION" | "Loading..." | "ANALYZING...";
 
 /* ══════════════════════════════════════════════════════
    INPUT WRAPPER — entry animations + fade-out + glow
@@ -914,9 +919,9 @@ const SimulateInputWrapper = ({
   onError: (msg: string) => void;
   hidden: boolean;
 }) => {
-  const [value, setValue]            = useState("");
-  const [btnLabel, setBtnLabel]      = useState<BtnLabel>("RUN SIMULATION");
-  const [inputError, setInputError]  = useState("");
+  const [value, setValue] = useState("");
+  const [btnLabel, setBtnLabel] = useState<BtnLabel>("RUN SIMULATION");
+  const [inputError, setInputError] = useState("");
   const [displayedLabel, setDisplayedLabel] = useState("RUN SIMULATION");
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { balance, spendFlux, canAfford } = useFlux();
@@ -963,7 +968,7 @@ const SimulateInputWrapper = ({
     if (!trimmed) { setInputError("Enter a decision to simulate."); return; }
     setInputError("");
     onRunStart();
-    setBtnLabel("INITIALIZING...");
+    setBtnLabel("Loading...");
     if (analyzingTimeoutRef.current) clearTimeout(analyzingTimeoutRef.current);
     analyzingTimeoutRef.current = setTimeout(() => setBtnLabel("ANALYZING..."), 1200);
     try {
@@ -1063,17 +1068,17 @@ const SimulateInputWrapper = ({
           animate={
             isRunning
               ? {
-                  boxShadow: [
-                    "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0px rgba(255,255,255,0)",
-                    "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 24px rgba(255,255,255,0.08)",
-                    "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0px rgba(255,255,255,0)",
-                  ],
-                  opacity: 0.7,
-                }
+                boxShadow: [
+                  "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0px rgba(255,255,255,0)",
+                  "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 24px rgba(255,255,255,0.08)",
+                  "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0px rgba(255,255,255,0)",
+                ],
+                opacity: 0.7,
+              }
               : {
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)",
-                  opacity: 1,
-                }
+                boxShadow: "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)",
+                opacity: 1,
+              }
           }
           transition={
             isRunning
@@ -1082,11 +1087,11 @@ const SimulateInputWrapper = ({
           }
           onMouseEnter={(e) => {
             if (isRunning) return;
-            e.currentTarget.style.background  = "rgba(255,255,255,0.07)";
+            e.currentTarget.style.background = "rgba(255,255,255,0.07)";
             e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background  = "rgba(255,255,255,0.04)";
+            e.currentTarget.style.background = "rgba(255,255,255,0.04)";
             e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)";
           }}
         >
@@ -1131,14 +1136,14 @@ const SimulateInputWrapper = ({
               gap: 6,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background  = "rgba(255,255,255,0.06)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.06)";
               e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)";
-              e.currentTarget.style.color       = "rgba(255,255,255,0.85)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.85)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background  = "rgba(255,255,255,0.03)";
+              e.currentTarget.style.background = "rgba(255,255,255,0.03)";
               e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-              e.currentTarget.style.color       = "rgba(255,255,255,0.55)";
+              e.currentTarget.style.color = "rgba(255,255,255,0.55)";
             }}
           >
             {prompt}
@@ -1162,14 +1167,14 @@ const SimulateInputWrapper = ({
 /* ══════════════════════════════════════════════════════
    HISTORY DRAWER UI
 ══════════════════════════════════════════════════════ */
-const HistoryDrawer = ({ 
-  isOpen, 
-  onClose, 
+const HistoryDrawer = ({
+  isOpen,
+  onClose,
   onLoadSimulation,
   refreshTrigger
-}: { 
-  isOpen: boolean; 
-  onClose: () => void; 
+}: {
+  isOpen: boolean;
+  onClose: () => void;
   onLoadSimulation: (id: string, text: string, branches: any, rec: any) => void;
   refreshTrigger: number;
 }) => {
@@ -1216,16 +1221,16 @@ const HistoryDrawer = ({
             </div>
             <div className="flex-1 overflow-y-auto cosmic-scrollbar p-6 space-y-4">
               {loading ? (
-                 <p className="font-mono text-[10px] uppercase text-white/20 text-center mt-10">Loading...</p>
+                <p className="font-mono text-[10px] uppercase text-white/20 text-center mt-10">Loading...</p>
               ) : history.length === 0 ? (
-                 <p className="font-mono text-[10px] uppercase text-white/20 text-center mt-10">No simulations yet</p>
+                <p className="font-mono text-[10px] uppercase text-white/20 text-center mt-10">No simulations yet</p>
               ) : (
                 history.map(item => {
                   const isCommitted = item.committed_timelines && item.committed_timelines.length > 0;
                   const d = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(item.created_at));
                   return (
-                    <div 
-                      key={item.id} 
+                    <div
+                      key={item.id}
                       onClick={() => onLoadSimulation(item.id, item.decision_text, item.branches, item.recommended_trajectory)}
                       className="p-4 rounded-lg cursor-pointer bg-white/5 hover:bg-white/10 transition-colors border border-white/5"
                     >
@@ -1233,10 +1238,10 @@ const HistoryDrawer = ({
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-[9px] text-white/30">{d}</span>
                         <div className="flex items-center gap-2">
-                           <span className="font-mono text-[9px] text-white/30 uppercase">{item.branches?.length || 0} Branches</span>
-                           {isCommitted && (
-                             <span className="font-mono text-[8px] tracking-[0.1em] px-1.5 py-0.5 rounded text-amber-500 bg-amber-500/10 border border-amber-500/20">CONFIRMED</span>
-                           )}
+                          <span className="font-mono text-[9px] text-white/30 uppercase">{item.branches?.length || 0} Branches</span>
+                          {isCommitted && (
+                            <span className="font-mono text-[8px] tracking-[0.1em] px-1.5 py-0.5 rounded text-amber-500 bg-amber-500/10 border border-amber-500/20">CONFIRMED</span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1254,9 +1259,9 @@ const HistoryDrawer = ({
 /* ══════════════════════════════════════════════════════
    PAGE SHELL
 ══════════════════════════════════════════════════════ */
-const Simulate = () => {
-  const [simState, setSimState]         = useState<SimState>("idle");
-  const [simResult, setSimResult]       = useState<SimulationResult | null>(null);
+const Simulate = ({ hideHeader = false }: SimulateProps) => {
+  const [simState, setSimState] = useState<SimState>("idle");
+  const [simResult, setSimResult] = useState<SimulationResult | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
   const [currentSimulationId, setCurrentSimulationId] = useState<string | null>(null);
@@ -1282,7 +1287,7 @@ const Simulate = () => {
           })
           .select()
           .single();
-        
+
         if (data) setCurrentSimulationId(data.id);
       }
     } catch {
@@ -1303,7 +1308,7 @@ const Simulate = () => {
 
   /* Subtitle animation delay */
   const subtitleDelay = 1.4;
-  const ruleDelay     = subtitleDelay + 0.8 + 0.3;
+  const ruleDelay = subtitleDelay + 0.8 + 0.3;
 
   return (
     <div className="min-h-screen relative" style={{ overflowX: "hidden", width: "100%", maxWidth: "100vw", boxSizing: "border-box" }}>
@@ -1333,24 +1338,24 @@ const Simulate = () => {
         transition={{ duration: 2, ease: "easeOut", delay: 0.5 }}
       />
 
-      <CommitModal 
-        isOpen={showCommitModal} 
-        onClose={() => setShowCommitModal(false)} 
-        branch={selectedBranch as any} 
-        simulationId={currentSimulationId} 
+      <CommitModal
+        isOpen={showCommitModal}
+        onClose={() => setShowCommitModal(false)}
+        branch={selectedBranch as any}
+        simulationId={currentSimulationId}
         onPlanActivated={() => setRefreshTrigger(prev => prev + 1)}
       />
 
-      <HistoryDrawer 
-        isOpen={isHistoryOpen} 
+      <HistoryDrawer
+        isOpen={isHistoryOpen}
         refreshTrigger={refreshTrigger}
-        onClose={() => setIsHistoryOpen(false)} 
+        onClose={() => setIsHistoryOpen(false)}
         onLoadSimulation={(id, txt, branches, rec) => {
-            setCurrentSimulationId(id);
-            setSimResult({ branches, recommendedTrajectory: rec });
-            setSimState("ready");
-            setIsHistoryOpen(false);
-        }} 
+          setCurrentSimulationId(id);
+          setSimResult({ branches, recommendedTrajectory: rec });
+          setSimState("ready");
+          setIsHistoryOpen(false);
+        }}
       />
 
       <button
@@ -1389,7 +1394,7 @@ const Simulate = () => {
       </div>
 
       <div className="relative z-10 flex flex-col min-h-screen">
-        <Header />
+        {!hideHeader && <Header />}
 
         <main className="flex-1 flex flex-col items-center px-4 sm:px-6 pt-8 pb-12 lg:pt-12 lg:pb-20 overflow-y-auto cosmic-scrollbar">
           <div className="w-full max-w-[728px]">
@@ -1409,7 +1414,7 @@ const Simulate = () => {
 
               {/* Static Headline (Fallback Safety) */}
               <h1 style={{
-                fontSize: "clamp(32px, 5vw, 64px)",
+                fontSize: "clamp(28px, 6vw, 64px)",
                 fontWeight: "bold",
                 color: "#FFFFFF",
                 textAlign: "center",
@@ -1418,7 +1423,8 @@ const Simulate = () => {
                 opacity: 1,
                 visibility: "visible"
               }}>
-                Model Your Future. Choose Your Timeline.
+                <span style={{ display: "block", whiteSpace: "nowrap" }}>Model Your Future.</span>
+                <span style={{ display: "block", whiteSpace: "nowrap" }}>Choose Your Timeline.</span>
               </h1>
 
               {/* Subtitle */}
@@ -1456,9 +1462,9 @@ const Simulate = () => {
 
             {/* ── Output states ── */}
             <AnimatePresence mode="wait">
-              {simState === "idle"    && <IdleGraphic key="idle" />}
-              {simState === "loading" && <RadarPing   key="radar" />}
-              {simState === "error"   && <ErrorState  key="error" message={errorMessage} />}
+              {simState === "idle" && <IdleGraphic key="idle" />}
+              {simState === "loading" && <RadarPing key="radar" />}
+              {simState === "error" && <ErrorState key="error" message={errorMessage} />}
               {simState === "ready" && simResult && (
                 <motion.div
                   key="brief"
@@ -1466,12 +1472,12 @@ const Simulate = () => {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2, ease: EASE_OUT }}
                 >
-                  <IntelligenceBrief 
-                    result={simResult} 
+                  <IntelligenceBrief
+                    result={simResult}
                     onCommit={(branch) => {
                       setSelectedBranch(branch);
                       setShowCommitModal(true);
-                    }} 
+                    }}
                   />
                 </motion.div>
               )}

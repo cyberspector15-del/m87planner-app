@@ -7,6 +7,7 @@ export default defineConfig(() => ({
   server: {
     host: "::",
     port: 8080,
+    allowedHosts: true,
     proxy: {
       "/nvidia-api": {
         target: "https://integrate.api.nvidia.com",

@@ -17,6 +17,7 @@ import FocusSetup from "./pages/FocusSetup";
 import FocusSession from "./pages/FocusSession";
 import PricingPage from "./pages/PricingPage";
 import { useAirMode } from "@/features/air-mode/AirModeProvider";
+import MobileApp from "./mobile/MobileApp";
 
 import { AirModeControls } from "@/features/air-mode/AirModeControls";
 
@@ -49,6 +50,55 @@ const MailModalWrapper = () => {
 
 const queryClient = new QueryClient();
 
+const DesktopRoutes = () => (
+  <Routes>
+    <Route path="/" element={<Home />} />
+    <Route path="/auth" element={<Auth />} />
+    <Route
+      path="/dashboard"
+      element={
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/settings"
+      element={
+        <ProtectedRoute>
+          <Settings />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/simulate"
+      element={
+        <ProtectedRoute>
+          <Simulate />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/focus/setup"
+      element={
+        <ProtectedRoute>
+          <FocusSetup />
+        </ProtectedRoute>
+      }
+    />
+    <Route
+      path="/focus/session"
+      element={
+        <ProtectedRoute>
+          <FocusSession />
+        </ProtectedRoute>
+      }
+    />
+    <Route path="/pricing" element={<PricingPage />} />
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+);
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -59,50 +109,8 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/simulate"
-                  element={
-                    <ProtectedRoute>
-                      <Simulate />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/focus/setup"
-                  element={
-                    <ProtectedRoute>
-                      <FocusSetup />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/focus/session"
-                  element={
-                    <ProtectedRoute>
-                      <FocusSession />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="/pricing" element={<PricingPage />} />
-                <Route path="*" element={<NotFound />} />
+                <Route path="/m/*" element={<MobileApp />} />
+                <Route path="/*" element={<DesktopRoutes />} />
               </Routes>
             </BrowserRouter>
             <AirModeWrapper />

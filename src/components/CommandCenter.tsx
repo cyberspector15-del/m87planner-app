@@ -71,6 +71,7 @@ const placeholders = [
 
 interface CommandCenterProps {
   className?: string;
+  compact?: boolean;
 }
 
 const HISTORY_KEY = "m87-command-history";
@@ -86,7 +87,7 @@ interface ConversationMessage {
   content: string;
 }
 
-const CommandCenter = ({ className }: CommandCenterProps) => {
+const CommandCenter = ({ className, compact = false }: CommandCenterProps) => {
   const { isActive } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { canAfford, spendFlux, balance } = useFlux();
@@ -584,8 +585,12 @@ const CommandCenter = ({ className }: CommandCenterProps) => {
           className={cn(
             "relative overflow-hidden rounded-2xl transition-all duration-300",
             isSpotlightActive 
-              ? "glass-strong p-6" 
-              : "glass p-5"
+              ? compact
+                ? "glass-strong p-4"
+                : "glass-strong p-6"
+              : compact
+                ? "glass p-3"
+                : "glass p-5"
           )}
           style={{
             boxShadow: isSpotlightActive

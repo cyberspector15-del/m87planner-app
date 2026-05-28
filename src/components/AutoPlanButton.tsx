@@ -41,6 +41,9 @@ import type { RescheduledTask } from "@/hooks/useSmartReschedule";
 
 interface AutoPlanButtonProps {
   selectedDate?: Date;
+  hideViewResultsButton?: boolean;
+  primaryButtonClassName?: string;
+  containerClassName?: string;
 }
 
 /** Safely format a date string — returns fallback string if date is invalid. */
@@ -55,7 +58,12 @@ function safeFormat(dateStr: string | null | undefined, fmt: string, fallback = 
   }
 }
 
-const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
+const AutoPlanButton = ({
+  selectedDate = new Date(),
+  hideViewResultsButton = false,
+  primaryButtonClassName,
+  containerClassName,
+}: AutoPlanButtonProps) => {
   const { isActive } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeModalFeature, setUpgradeModalFeature] = useState("");
@@ -190,7 +198,7 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
   // Render disabled state for manual mode
   if (isManualMode) {
     return (
-      <div className="glass rounded-xl p-6 relative overflow-hidden opacity-60">
+      <div className={cn("glass rounded-xl p-6 relative overflow-hidden opacity-60", containerClassName)}>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-muted/20 border border-muted/30 flex items-center justify-center">
@@ -275,7 +283,7 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
         onComplete={handleWinScreenComplete}
       />
 
-      <div className="glass rounded-xl p-6 relative overflow-hidden">
+      <div className={cn("glass rounded-xl p-6 relative overflow-hidden", containerClassName)}>
         {/* Animated background glow */}
         <div
           className={cn(
@@ -314,7 +322,7 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
             <Button
               variant="cosmic-primary"
               size="lg"
-              className="flex-1 gap-2"
+              className={cn("flex-1 gap-2", primaryButtonClassName)}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
               onClick={initiateAutoPlan}
@@ -331,16 +339,18 @@ const AutoPlanButton = ({ selectedDate = new Date() }: AutoPlanButtonProps) => {
             </Button>
 
             {/* View Results */}
-            <Button
-              variant="cosmic-outline"
-              size="lg"
-              className="gap-2"
-              onClick={() => results.length > 0 && setShowResults(true)}
-              disabled={results.length === 0}
-            >
-              <MagicWand size={16} weight="thin" />
-              View Results
-            </Button>
+            {!hideViewResultsButton && (
+              <Button
+                variant="cosmic-outline"
+                size="lg"
+                className="gap-2"
+                onClick={() => results.length > 0 && setShowResults(true)}
+                disabled={results.length === 0}
+              >
+                <MagicWand size={16} weight="thin" />
+                View Results
+              </Button>
+            )}
           </div>
 
           {/* Smart Reschedule button */}

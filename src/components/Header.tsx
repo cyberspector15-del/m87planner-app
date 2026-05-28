@@ -19,6 +19,7 @@ import TaskList from "@/components/TaskList";
 import AnalyticsPanel from "@/components/AnalyticsPanel";
 import { NotificationSettings } from "@/components/NotificationSettings";
 import { useMail } from "@/contexts/MailContext";
+import ProfileDrawer from "./ProfileDrawer";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -30,6 +31,7 @@ const Header = () => {
   const [tasksOpen, setTasksOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const { mailOpen, setMailOpen, mailUnread, setMailUnread } = useMail();
   const isSimulateActive = location.pathname === "/simulate";
   const isFocusActive = location.pathname.startsWith("/focus");
@@ -42,11 +44,13 @@ const Header = () => {
     });
   };
 
-  // Get user initial from email
-  const userInitial = user?.email?.charAt(0).toUpperCase() || "U";
+  // Get user initial from name, fallback to email
+  const fullName = user?.user_metadata?.full_name || user?.email || "U";
+  const userInitial = fullName.charAt(0).toUpperCase();
 
   return (
-    <header className="relative z-10 glass border-b border-border/30">
+    <>
+      <header className="relative z-10 glass border-b border-border/30">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -235,14 +239,31 @@ const Header = () => {
             >
               <SignOut size={16} weight="thin" />
             </Button>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-cosmic-silver/20 to-cosmic-teal/20 border border-cosmic-silver/30 flex items-center justify-center ml-2">
-              <span className="text-sm font-medium text-cosmic-silver">{userInitial}</span>
-            </div>
+            <button
+              onClick={() => {
+                vibrate("light");
+                setProfileOpen(true);
+              }}
+              className="w-9 h-9 rounded-full bg-gradient-to-br from-cosmic-silver/20 to-cosmic-teal/20 border border-cosmic-silver/30 flex items-center justify-center ml-2 cursor-pointer overflow-hidden focus:outline-none focus:ring-1 focus:ring-cosmic-silver/50"
+              title="Open profile"
+            >
+              {user?.user_metadata?.avatar_url ? (
+                <img
+                  src={user.user_metadata.avatar_url}
+                  alt={user.user_metadata.full_name || "Profile"}
+                  className="w-full h-full object-cover rounded-full"
+                />
+              ) : (
+                <span className="text-sm font-medium text-cosmic-silver">{userInitial}</span>
+              )}
+            </button>
           </div>
         </div>
       </div>
     </header>
-  );
+    <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
+  </>
+);
 };
 
 export default Header;

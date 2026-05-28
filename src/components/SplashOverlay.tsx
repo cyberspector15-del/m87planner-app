@@ -21,7 +21,7 @@ interface Star {
 }
 
 const loadingMessages = [
-  "Initializing cosmic systems…",
+  "Loading cosmic systems…",
   "Calibrating your orbit…",
   "Preparing your universe…",
 ];
@@ -76,9 +76,9 @@ const StarField = ({ isVisible }: { isVisible: boolean }) => {
           animate={
             isVisible
               ? {
-                  opacity: [star.opacity * 0.3, star.opacity, star.opacity * 0.3],
-                  scale: [0.8, 1, 0.8],
-                }
+                opacity: [star.opacity * 0.3, star.opacity, star.opacity * 0.3],
+                scale: [0.8, 1, 0.8],
+              }
               : { opacity: 0, scale: 0 }
           }
           transition={{
@@ -110,8 +110,8 @@ const SplashOverlay = ({
     variant === "signin"
       ? signinMessages
       : variant === "signup"
-      ? signupMessages
-      : loadingMessages;
+        ? signupMessages
+        : loadingMessages;
 
   // Play initiate sound and haptic when overlay appears
   useEffect(() => {
@@ -152,7 +152,7 @@ const SplashOverlay = ({
     const timer = setTimeout(() => {
       const randomMessage =
         completionMessages[variant][
-          Math.floor(Math.random() * completionMessages[variant].length)
+        Math.floor(Math.random() * completionMessages[variant].length)
         ];
       setCompletionMessage(randomMessage);
       setShowCompletion(true);
@@ -273,12 +273,12 @@ const SplashOverlay = ({
                     showCompletion
                       ? {}
                       : {
-                          boxShadow: [
-                            "0 0 50px hsl(var(--cosmic-silver) / 0.25), inset 0 0 25px hsl(var(--cosmic-black))",
-                            "0 0 70px hsl(var(--cosmic-silver) / 0.45), inset 0 0 25px hsl(var(--cosmic-black))",
-                            "0 0 50px hsl(var(--cosmic-silver) / 0.25), inset 0 0 25px hsl(var(--cosmic-black))",
-                          ],
-                        }
+                        boxShadow: [
+                          "0 0 50px hsl(var(--cosmic-silver) / 0.25), inset 0 0 25px hsl(var(--cosmic-black))",
+                          "0 0 70px hsl(var(--cosmic-silver) / 0.45), inset 0 0 25px hsl(var(--cosmic-black))",
+                          "0 0 50px hsl(var(--cosmic-silver) / 0.25), inset 0 0 25px hsl(var(--cosmic-black))",
+                        ],
+                      }
                   }
                   transition={{
                     duration: 2,
