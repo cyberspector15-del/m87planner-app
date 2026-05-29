@@ -19,6 +19,7 @@ import PricingPage from "./pages/PricingPage";
 import { useAirMode } from "@/features/air-mode/AirModeProvider";
 import MobileApp from "./mobile/MobileApp";
 import { useAutoUiRedirect } from "@/hooks/useAutoUiRedirect";
+import { useAuth } from "@/hooks/useAuth";
 
 import { AirModeControls } from "@/features/air-mode/AirModeControls";
 
@@ -52,7 +53,8 @@ const MailModalWrapper = () => {
 const queryClient = new QueryClient();
 
 const DesktopRoutes = () => {
-  useAutoUiRedirect();
+  const { user } = useAuth();
+  useAutoUiRedirect({ isAuthenticated: !!user });
 
   return (
     <Routes>

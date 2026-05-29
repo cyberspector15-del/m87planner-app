@@ -36,7 +36,7 @@ function mapDesktopPathToMobile(pathname: string): string {
   return "/m/dashboard";
 }
 
-export function useAutoUiRedirect() {
+export function useAutoUiRedirect({ isAuthenticated }: { isAuthenticated: boolean }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -59,6 +59,10 @@ export function useAutoUiRedirect() {
     }
 
     if (location.pathname.startsWith("/m")) return;
+    // Never redirect the auth flow. Mobile UI currently reuses desktop auth.
+    if (location.pathname.startsWith("/auth")) return;
+    // Don't auto-redirect signed-out users into the mobile app shell.
+    if (!isAuthenticated) return;
 
     const mode = getUiModeFromStorage();
     if (mode === "desktop") return;
@@ -70,6 +74,5 @@ export function useAutoUiRedirect() {
     if (location.pathname !== target) {
       navigate(target, { replace: true });
     }
-  }, [location.pathname, location.search, navigate]);
+  }, [location.pathname, location.search, navigate, isAuthenticated]);
 }
-
