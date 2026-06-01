@@ -16,6 +16,7 @@ import Simulate from "./pages/Simulate";
 import FocusSetup from "./pages/FocusSetup";
 import FocusSession from "./pages/FocusSession";
 import PricingPage from "./pages/PricingPage";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import { useAirMode } from "@/features/air-mode/AirModeProvider";
 import MobileApp from "./mobile/MobileApp";
 import { useAutoUiRedirect } from "@/hooks/useAutoUiRedirect";
@@ -101,6 +102,7 @@ const DesktopRoutes = () => {
         }
       />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

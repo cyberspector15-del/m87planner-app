@@ -69,7 +69,7 @@ export default function PricingPage() {
   const navigate = useNavigate();
   const [isYearly, setIsYearly] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
-  
+
   // Currency state
   const [currency, setCurrency] = useState<keyof typeof CURRENCIES>('USD');
   const [rates, setRates] = useState<Record<string, number> | null>(null);
@@ -94,91 +94,50 @@ export default function PricingPage() {
     }
     const rate = rates[currency];
     const converted = usdPrice * rate;
-    
+
     if (currency === 'INR') {
       return Math.round(converted).toLocaleString('en-IN');
     }
-    
+
     return parseFloat(converted.toFixed(2)).toLocaleString('en-US', { minimumFractionDigits: converted % 1 === 0 ? 0 : 2, maximumFractionDigits: 2 });
   };
 
-  // Per-button state: null | 'loading' | 'success'
-  const [tierButtonState, setTierButtonState] = useState<Record<string, 'loading' | 'success'>>({});
-  const [packButtonState, setPackButtonState] = useState<Record<string, 'loading' | 'success'>>({});
+  const handleGetStarted = (tierName: string) => {
+    const links: Record<string, { monthly: string, annual: string }> = {
+      'EVENT HORIZON': {
+        monthly: 'https://whop.com/singularityspace/event-horizon-monthly',
+        annual: 'https://whop.com/singularityspace/event-horizon-annual'
+      },
+      'ADVANCE': {
+        monthly: 'https://whop.com/singularityspace/advance-monthly',
+        annual: 'https://whop.com/singularityspace/advance-annual'
+      },
+      'APEX': {
+        monthly: 'https://whop.com/singularityspace/apex-monthly-fc',
+        annual: 'https://whop.com/singularityspace/apex-annual'
+      },
+      'SINGULARITY': {
+        monthly: 'https://whop.com/singularityspace/singularity-monthly',
+        annual: 'https://whop.com/singularityspace/singularity-annual'
+      }
+    };
 
-  const handleGetStarted = async (tierName: string) => {
-    const tierKey = TIER_KEY_MAP[tierName];
-    setTierButtonState((s) => ({ ...s, [tierName]: 'loading' }));
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (!user) return;
-      await supabase
-        .from('profiles')
-        .update({ subscription_tier: tierKey, subscription_status: 'active' })
-        .eq('user_id', user.id);
-      const allowance = TIER_ALLOWANCE_MAP[tierKey];
-      await supabase
-        .from('user_credits')
-        .upsert({
-          user_id: user.id,
-          balance: allowance,
-          monthly_allowance: allowance,
-          last_reset_date: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
-      setTierButtonState((s) => ({ ...s, [tierName]: 'success' }));
-      setTimeout(() => navigate('/dashboard'), 1500);
-    } finally {
-      // keep 'success' visible until navigation
+    const url = isYearly ? links[tierName]?.annual : links[tierName]?.monthly;
+    if (url) {
+      window.open(url, '_blank');
     }
   };
 
-  const handleTopUp = async (packName: string) => {
-    const credits = PACK_CREDITS[packName];
-    setPackButtonState((s) => ({ ...s, [packName]: 'loading' }));
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const user = session?.user;
-      if (!user) return;
+  const handleTopUp = (packName: string) => {
+    const links: Record<string, string> = {
+      'FLUX BOOST': 'https://whop.com/singularityspace/flux-boost',
+      'FLUX SURGE': 'https://whop.com/singularityspace/flux-surge',
+      'FLUX OVERDRIVE': 'https://whop.com/singularityspace/flux-overdrive'
+    };
 
-      // Check active subscription
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_status')
-        .eq('user_id', user.id)
-        .single();
-      if (profile?.subscription_status !== 'active') {
-        alert('You need an active subscription first.');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setPackButtonState((s) => { const n = { ...s }; delete n[packName]; return n; });
-        return;
-      }
-
-      // Upsert user_credits and add credits
-      const { data: existing } = await supabase
-        .from('user_credits')
-        .select('balance')
-        .eq('user_id', user.id)
-        .single();
-      const newBalance = (existing?.balance ?? 0) + credits;
-      await supabase
-        .from('user_credits')
-        .upsert({ user_id: user.id, balance: newBalance }, { onConflict: 'user_id' });
-      await supabase
-        .from('credit_transactions')
-        .insert({
-          user_id: user.id,
-          amount: credits,
-          action_type: 'addon_purchase',
-          description: `FLUX Top-Up — ${packName}`,
-        });
-      setPackButtonState((s) => ({ ...s, [packName]: 'success' }));
-      setTimeout(() => {
-        setPackButtonState((s) => { const n = { ...s }; delete n[packName]; return n; });
-      }, 1500);
-    } catch {
-      setPackButtonState((s) => { const n = { ...s }; delete n[packName]; return n; });
+    const url = links[packName];
+    if (url) {
+      window.open(url, '_blank');
     }
   };
 
@@ -256,25 +215,6 @@ export default function PricingPage() {
     <div className="min-h-screen text-white relative" style={{ backgroundColor: '#000000', fontFamily: "'Inter', sans-serif" }}>
       <div className="relative z-10">
         <Header />
-
-        {/* TEST MODE banner */}
-        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '16px', paddingBottom: '0' }}>
-          <div
-            style={{
-              background: '#1F1F1F',
-              border: '1px solid #E8AB30',
-              borderRadius: '20px',
-              padding: '6px 16px',
-              fontFamily: "'Space Mono', monospace",
-              fontSize: '10px',
-              color: '#E8AB30',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-            }}
-          >
-            ⚡ TEST MODE — Payments simulated
-          </div>
-        </div>
 
         <div className="px-6 md:px-12 lg:px-24" style={{ paddingTop: '48px', paddingBottom: '96px' }}>
           <div className="max-w-7xl mx-auto">
@@ -412,9 +352,8 @@ export default function PricingPage() {
             >
               {tiers.map((tier) => {
                 const isSingularity = tier.variant === 'singularity';
-                const btnState = tierButtonState[tier.name];
-                const isLoading = btnState === 'loading';
-                const isSuccess = btnState === 'success';
+                const isLoading = false;
+                const isSuccess = false;
 
                 return (
                   <motion.div
@@ -566,8 +505,8 @@ export default function PricingPage() {
                         background: isSuccess
                           ? '#2EB867'
                           : isSingularity
-                          ? '#45A199'
-                          : 'linear-gradient(135deg, #BFBFBF 0%, #999999 100%)',
+                            ? '#45A199'
+                            : 'linear-gradient(135deg, #BFBFBF 0%, #999999 100%)',
                         transition: 'all 0.2s ease',
                       }}
                       onMouseEnter={(e) => {
@@ -770,9 +709,8 @@ export default function PricingPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl mx-auto">
                 {fluxPacks.map((pack) => {
-                  const btnState = packButtonState[pack.name];
-                  const isLoading = btnState === 'loading';
-                  const isSuccess = btnState === 'success';
+                  const isLoading = false;
+                  const isSuccess = false;
                   return (
                     <motion.div
                       key={pack.name}
@@ -894,7 +832,7 @@ export default function PricingPage() {
               }}>
                 FREQUENTLY ASKED QUESTIONS
               </div>
-              
+
               <div style={{ maxWidth: '720px', margin: '0 auto' }}>
                 {[
                   {
@@ -965,7 +903,7 @@ export default function PricingPage() {
                           {isOpen ? '−' : '+'}
                         </span>
                       </button>
-                      
+
                       <AnimatePresence>
                         {isOpen && (
                           <motion.div
