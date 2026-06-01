@@ -90,6 +90,11 @@ const features = [
     title: "Dark Mode",
     description: "Premium cosmic theme designed for long sessions",
   },
+  {
+    icon: EnvelopeSimple,
+    title: "More Incoming",
+    description: "More features on the way — watch your M87 Mail inbox.",
+  },
 ];
 const Home = () => {
   const navigate = useNavigate();
