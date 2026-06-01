@@ -14,10 +14,11 @@ import {
   Lightning,
   AirplaneTilt,
   Robot,
+  CaretDown,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import heroVideo from "@/assets/m87-hero-video.mp4";
 const features = [
   {
@@ -99,6 +100,7 @@ const features = [
 const Home = () => {
   const navigate = useNavigate();
   const featuresRef = useRef<HTMLElement>(null);
+  const [expandedFeature, setExpandedFeature] = useState<number | null>(null);
   const scrollToFeatures = () => {
     featuresRef.current?.scrollIntoView({
       behavior: 'smooth'
@@ -129,7 +131,7 @@ const Home = () => {
           muted
           loop
           playsInline
-          className="absolute inset-0 z-0 w-full h-full object-cover"
+          className="absolute inset-0 z-0 w-full h-full object-contain md:object-cover scale-[2] sm:scale-100"
         >
           <source src={heroVideo} type="video/mp4" />
         </video>
@@ -144,12 +146,22 @@ const Home = () => {
           <h1 className="sr-only">M87 Planner - AI-powered cosmic planner</h1>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in mt-8">
-            <Button variant="cosmic-primary" size="xl" onClick={() => navigate("/auth")} className="gap-2 min-w-[200px]">
+          <div className="flex flex-row items-center justify-center gap-3 animate-fade-in mt-8 w-full max-w-sm mx-auto">
+            <Button
+              variant="cosmic-primary"
+              size="lg"
+              onClick={() => navigate("/auth")}
+              className="gap-2 flex-1 min-w-0"
+            >
               Get Started
               <ArrowRight size={20} weight="thin" />
             </Button>
-            <Button variant="cosmic-outline" size="xl" className="min-w-[200px]" onClick={scrollToFeatures}>
+            <Button
+              variant="cosmic-outline"
+              size="lg"
+              className="flex-1 min-w-0"
+              onClick={scrollToFeatures}
+            >
               Learn More
             </Button>
           </div>
@@ -176,18 +188,50 @@ const Home = () => {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {features.map((feature, index) => <div key={feature.title} className="scroll-animate opacity-0 translate-y-8 transition-all duration-700 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 glass rounded-2xl p-6 hover:border-cosmic-silver/30 hover:scale-[1.02] group" style={{
+            {features.map((feature, index) => <div key={feature.title} className="scroll-animate opacity-0 translate-y-8 transition-all duration-700 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0" style={{
             transitionDelay: `${index * 100}ms`
           }}>
-                <div className="w-12 h-12 rounded-xl bg-cosmic-silver/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-silver/20 transition-colors">
-                  <feature.icon size={24} weight="thin" className="text-cosmic-silver" />
+                {/* Desktop/tablet cards */}
+                <div className="hidden md:block glass rounded-2xl p-6 hover:border-cosmic-silver/30 hover:scale-[1.02] group">
+                  <div className="w-12 h-12 rounded-xl bg-cosmic-silver/10 flex items-center justify-center mb-4 group-hover:bg-cosmic-silver/20 transition-colors">
+                    <feature.icon size={24} weight="thin" className="text-cosmic-silver" />
+                  </div>
+                  <h3 className="font-display font-semibold text-foreground mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="font-display font-semibold text-foreground mb-2">
-                  {feature.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {feature.description}
-                </p>
+
+                {/* Mobile: tap-to-expand cards */}
+                <button
+                  type="button"
+                  onClick={() => setExpandedFeature(prev => prev === index ? null : index)}
+                  className="md:hidden w-full text-left glass rounded-2xl p-5 border border-border/30 hover:border-cosmic-silver/30 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-cosmic-silver/10 flex items-center justify-center shrink-0">
+                      <feature.icon size={20} weight="thin" className="text-cosmic-silver" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display font-semibold text-foreground truncate">
+                        {feature.title}
+                      </h3>
+                    </div>
+                    <CaretDown
+                      size={18}
+                      weight="bold"
+                      className={`text-muted-foreground transition-transform ${expandedFeature === index ? "rotate-180" : ""}`}
+                    />
+                  </div>
+
+                  {expandedFeature === index && (
+                    <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                      {feature.description}
+                    </p>
+                  )}
+                </button>
               </div>)}
           </div>
         </div>
@@ -209,7 +253,12 @@ const Home = () => {
               <p className="text-muted-foreground max-w-xl mx-auto mb-8">
                 Join the cosmic revolution. Let AI handle your scheduling so you can focus on achieving your goals.
               </p>
-              <Button variant="cosmic-primary" size="xl" onClick={() => navigate("/auth")} className="gap-2">
+              <Button
+                variant="cosmic-primary"
+                size="xl"
+                onClick={() => navigate("/auth")}
+                className="gap-2 w-full max-w-sm mx-auto h-12 md:h-14 md:w-auto md:max-w-none"
+              >
                 Start Planning Now
               </Button>
             </div>
@@ -223,7 +272,7 @@ const Home = () => {
           <div className="flex items-center gap-2">
             <span className="font-display font-bold text-foreground">M87 PLANNER</span>
           </div>
-          <p className="text-sm text-muted-foreground">© 2026 M87 Planner. Powered by cosmic AI.</p>
+          <p className="text-sm text-muted-foreground">© 2026 M87 Planner. Powered by Singularity.</p>
         </div>
       </footer>
     </div>;
