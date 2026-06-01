@@ -138,18 +138,10 @@ const Home = () => {
         <div className="absolute inset-0 z-[1] bg-gradient-to-t from-background via-transparent to-background/50" />
         <div className="absolute inset-0 z-[1] bg-gradient-to-b from-background/30 via-transparent to-background" />
 
-        {/* Content */}
-        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto pt-[38vh] sm:pt-[42vh] md:pt-[45vh]">
-          {/* Mobile: show real title (video text crops on phones). Desktop: keep the cinematic video title. */}
-          <h1 className="font-display text-5xl sm:text-6xl font-bold text-foreground tracking-tight md:sr-only">
-            M87 Planner
-          </h1>
-          <p className="mt-3 text-muted-foreground max-w-md mx-auto md:hidden">
-            AI-powered cosmic planner that organizes your day with travel-aware scheduling and routines.
-          </p>
-
-          {/* Desktop SEO/accessibility title */}
-          <h1 className="sr-only md:not-sr-only">M87 Planner - AI-powered cosmic planner</h1>
+        {/* Content - positioned below the image text */}
+        <div className="relative z-10 text-center px-6 max-w-4xl mx-auto pt-[45vh]">
+          {/* Hidden title for SEO/accessibility - visually the image provides the title */}
+          <h1 className="sr-only">M87 Planner - AI-powered cosmic planner</h1>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in mt-8">
@@ -164,7 +156,7 @@ const Home = () => {
         </div>
 
         {/* Scroll Indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce hidden sm:block">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 animate-bounce">
           <div className="w-6 h-10 rounded-full border-2 border-cosmic-silver/30 flex items-start justify-center p-2">
             <div className="w-1 h-2 bg-cosmic-silver/50 rounded-full animate-pulse" />
           </div>
