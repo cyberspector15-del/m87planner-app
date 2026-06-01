@@ -22,7 +22,14 @@ export function AirModeControls({
 }: AirModeControlsProps) {
   // Hide the floating Air Mode UI (incl. "TAP ME") on mobile shell routes.
   // NOTE: This component is rendered outside the router, so don't use react-router hooks here.
-  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/m')) return null;
+  if (
+    typeof window !== 'undefined' &&
+    (window.location.pathname.startsWith('/m') ||
+      window.location.pathname === '/' ||
+      window.location.pathname.startsWith('/auth'))
+  ) {
+    return null;
+  }
 
   const [expanded, setExpanded] = useState(false);
   const [isReturning, setIsReturning] = useState(false);

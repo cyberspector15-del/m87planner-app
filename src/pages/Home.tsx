@@ -1,25 +1,96 @@
-import { ArrowRight, Clock, MapPin, Brain, Calendar } from "@phosphor-icons/react";
+import {
+  ArrowRight,
+  Clock,
+  MapPin,
+  Brain,
+  Calendar,
+  Target,
+  GitBranch,
+  ChartLine,
+  Repeat,
+  Bell,
+  EnvelopeSimple,
+  Moon,
+  Lightning,
+  AirplaneTilt,
+  Robot,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import heroVideo from "@/assets/m87-hero-video.mp4";
-const features = [{
-  icon: Brain,
-  title: "AI Auto-Scheduler",
-  description: "Intelligent task placement based on priorities and preferences"
-}, {
-  icon: Clock,
-  title: "Smart Time Blocks",
-  description: "Automatic focus sessions and break scheduling"
-}, {
-  icon: MapPin,
-  title: "Travel-Aware",
-  description: "Calculates commute time between locations"
-}, {
-  icon: Calendar,
-  title: "Routine Builder",
-  description: "Generate habits and recurring tasks effortlessly"
-}];
+const features = [
+  {
+    icon: Brain,
+    title: "AI Auto-Scheduler",
+    description: "Intelligent task placement based on priorities and preferences",
+  },
+  {
+    icon: Robot,
+    title: "AI Command Center",
+    description: "Add tasks, events, and routines with natural language",
+  },
+  {
+    icon: Clock,
+    title: "Smart Time Blocks",
+    description: "Automatic focus sessions and break scheduling",
+  },
+  {
+    icon: Repeat,
+    title: "Routine Builder",
+    description: "Build habits and recurring tasks effortlessly",
+  },
+  {
+    icon: Target,
+    title: "Focus Mode",
+    description: "Guided deep work sessions with progress tracking",
+  },
+  {
+    icon: Lightning,
+    title: "FLUX System",
+    description: "Usage-based AI credits with transparent history",
+  },
+  {
+    icon: GitBranch,
+    title: "Consequences Simulator",
+    description: "Model timelines and outcomes before committing to decisions",
+  },
+  {
+    icon: ChartLine,
+    title: "Analytics",
+    description: "Track completion, focus time, streaks, and efficiency",
+  },
+  {
+    icon: Calendar,
+    title: "Timeline View",
+    description: "A clean day view for events, tasks, and time blocks",
+  },
+  {
+    icon: EnvelopeSimple,
+    title: "M87 Mail",
+    description: "In-app updates and messages with unread indicators",
+  },
+  {
+    icon: Bell,
+    title: "Notifications",
+    description: "Control alerts and reminders with granular settings",
+  },
+  {
+    icon: MapPin,
+    title: "Travel-Aware Scheduling",
+    description: "Plan with commute time and location context in mind",
+  },
+  {
+    icon: AirplaneTilt,
+    title: "Smart Reschedule",
+    description: "Rebalance unfinished tasks to protect your day",
+  },
+  {
+    icon: Moon,
+    title: "Dark Mode",
+    description: "Premium cosmic theme designed for long sessions",
+  },
+];
 const Home = () => {
   const navigate = useNavigate();
   const featuresRef = useRef<HTMLElement>(null);
@@ -99,7 +170,7 @@ const Home = () => {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {features.map((feature, index) => <div key={feature.title} className="scroll-animate opacity-0 translate-y-8 transition-all duration-700 [&.animate-in]:opacity-100 [&.animate-in]:translate-y-0 glass rounded-2xl p-6 hover:border-cosmic-silver/30 hover:scale-[1.02] group" style={{
             transitionDelay: `${index * 100}ms`
           }}>
