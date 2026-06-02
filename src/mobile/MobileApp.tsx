@@ -7,6 +7,7 @@ import MobileFocus from "./pages/MobileFocus";
 import MobileRoutines from "./pages/MobileRoutines";
 import MobileConsequences from "./pages/MobileConsequences";
 import MobileAnalytics from "./pages/MobileAnalytics";
+import MobilePricing from "./pages/MobilePricing";
 
 const MobileApp = () => {
   return (
@@ -19,6 +20,7 @@ const MobileApp = () => {
         <Route path="/routines" element={<MobileRoutines />} />
         <Route path="/consequences" element={<MobileConsequences />} />
         <Route path="/analytics" element={<MobileAnalytics />} />
+        <Route path="/pricing" element={<MobilePricing />} />
         <Route path="/settings" element={<MobileSettings />} />
         <Route path="*" element={<Navigate to="dashboard" replace />} />
       </Routes>

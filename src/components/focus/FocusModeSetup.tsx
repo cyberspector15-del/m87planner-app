@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { BreakTierCard } from './BreakTierCard';
 import { BreakActivityCard } from './BreakActivityCard';
@@ -14,6 +14,7 @@ export const FocusModeSetup = () => {
   const { isActive } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const { createSession, isLoading } = useFocusSession();
 
@@ -62,7 +63,7 @@ export const FocusModeSetup = () => {
     
     const session = await createSession(user.id, duration!, breakTier!, breakActivity);
     if (session) {
-      navigate('/focus/session');
+      navigate(location.pathname.startsWith('/m') ? '/m/focus/session' : '/focus/session');
     }
   };
 

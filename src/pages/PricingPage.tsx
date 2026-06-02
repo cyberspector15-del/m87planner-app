@@ -5,6 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from "@/components/Header";
 
+interface PricingPageProps {
+  hideHeader?: boolean;
+}
+
 const PRICE_IDS = {
   'EVENT HORIZON': { monthly: 'event_horizon_monthly', annual: 'event_horizon_annual' },
   'ADVANCE': { monthly: 'advance_monthly', annual: 'advance_annual' },
@@ -65,7 +69,7 @@ const CURRENCIES = {
   CAD: { symbol: 'C$', label: 'CAD' },
 } as const;
 
-export default function PricingPage() {
+export default function PricingPage({ hideHeader = false }: PricingPageProps) {
   const navigate = useNavigate();
   const [isYearly, setIsYearly] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -214,9 +218,9 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen text-white relative" style={{ backgroundColor: '#000000', fontFamily: "'Inter', sans-serif" }}>
       <div className="relative z-10">
-        <Header />
+        {!hideHeader && <Header />}
 
-        <div className="px-6 md:px-12 lg:px-24" style={{ paddingTop: '48px', paddingBottom: '96px' }}>
+        <div className="px-4 md:px-12 lg:px-24" style={{ paddingTop: hideHeader ? '24px' : '48px', paddingBottom: hideHeader ? '120px' : '96px' }}>
           <div className="max-w-7xl mx-auto">
 
             {/* Headline */}

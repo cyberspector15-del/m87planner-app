@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 export type SubscriptionTier = 
   'none' | 'event_horizon' | 'advance' | 'apex' | 'singularity'
@@ -54,17 +54,18 @@ export function useSubscription(): SubscriptionState {
 export function useRequireSubscription() {
   const { isActive, isLoading } = useSubscription()
   const navigate = useNavigate()
+  const location = useLocation()
 
   useEffect(() => {
     if (isLoading) return
     
     if (!isActive) {
       const timer = setTimeout(() => {
-        navigate('/pricing')
+        navigate(location.pathname.startsWith('/m') ? '/m/pricing' : '/pricing')
       }, 500)
       return () => clearTimeout(timer)
     }
-  }, [isActive, isLoading, navigate])
+  }, [isActive, isLoading, location.pathname, navigate])
 
   return { isActive, isLoading }
 }

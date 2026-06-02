@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { X } from '@phosphor-icons/react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +44,8 @@ const containerVariants = {
 
 export default function FluxHistoryModal({ isOpen, onClose }: FluxHistoryModalProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pricingPath = location.pathname.startsWith('/m') ? '/m/pricing' : '/pricing';
   const { balance, monthlyAllowance } = useFlux();
 
   // Fetch recent transactions
@@ -179,7 +181,7 @@ export default function FluxHistoryModal({ isOpen, onClose }: FluxHistoryModalPr
 
             {/* ── Get More FLUX Button ── */}
             <button
-              onClick={() => { navigate('/pricing'); onClose(); }}
+              onClick={() => { navigate(pricingPath); onClose(); }}
               style={{
                 width: '100%',
                 background: 'linear-gradient(135deg, #BFBFBF 0%, #999999 100%)',

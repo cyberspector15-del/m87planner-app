@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -27,6 +27,8 @@ export default function UpgradeModal({
   requiredTier,
 }: UpgradeModalProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const pricingPath = location.pathname.startsWith('/m') ? '/m/pricing' : '/pricing';
 
   // Handle escape key
   useEffect(() => {
@@ -223,7 +225,7 @@ export default function UpgradeModal({
               <button
                 onClick={() => {
                   onClose();
-                  navigate('/pricing');
+                  navigate(pricingPath);
                 }}
                 style={{
                   background: 'linear-gradient(135deg, #BFBFBF 0%, #999999 100%)',

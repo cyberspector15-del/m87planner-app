@@ -128,7 +128,7 @@ const MobileDashboard = () => {
                 size="icon"
                 onClick={() => {
                   vibrate("light");
-                  navigate("/settings");
+                  navigate("/m/settings");
                 }}
                 className="opacity-80 hover:opacity-100"
                 title="Settings"
@@ -240,7 +240,7 @@ const MobileDashboard = () => {
         onClose={() => setShowFluxModal(false)}
       />
 
-      <ProfileDrawer open={profileOpen} onOpenChange={setProfileOpen} />
+      <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>
   );
 };

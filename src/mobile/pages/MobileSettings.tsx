@@ -1,27 +1,50 @@
 import { Link } from "react-router-dom";
+import { CreditCard } from "lucide-react";
+import CosmicBackground from "@/components/CosmicBackground";
+import SettingsPlanningMode from "@/components/settings/SettingsPlanningMode";
+import SettingsScheduling from "@/components/settings/SettingsScheduling";
+import SettingsFeedback from "@/components/settings/SettingsFeedback";
+import SettingsAbout from "@/components/settings/SettingsAbout";
 import { Button } from "@/components/ui/button";
 
 const MobileSettings = () => {
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-xl font-semibold">Settings</h1>
-        <p className="text-sm text-muted-foreground">App preferences</p>
-      </header>
+    <div className="relative">
+      <CosmicBackground />
 
-      <div className="rounded-2xl border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">
-          Mobile settings screen scaffold.
-        </p>
-        <div className="mt-3 flex gap-2">
-          <Button asChild size="sm" variant="secondary">
-            <Link to="/settings">Open desktop settings</Link>
+      <div className="relative z-10 space-y-4">
+        <header>
+          <h1 className="font-display text-xl font-bold tracking-wider text-glow">
+            SETTINGS
+          </h1>
+          <p className="text-xs text-muted-foreground tracking-wide">
+            Customize your M87 experience
+          </p>
+        </header>
+
+        <SettingsPlanningMode />
+        <SettingsScheduling />
+        <SettingsFeedback />
+
+        <div className="glass rounded-2xl p-6 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-muted/50 flex items-center justify-center">
+              <CreditCard size={16} className="text-muted-foreground" />
+            </div>
+            <h2 className="font-display text-lg font-semibold text-foreground tracking-wide">
+              Billing
+            </h2>
+          </div>
+
+          <Button asChild variant="cosmic-outline" className="w-full">
+            <Link to="/m/pricing">View Plans & FLUX</Link>
           </Button>
         </div>
+
+        <SettingsAbout />
       </div>
     </div>
   );
 };
 
 export default MobileSettings;
-

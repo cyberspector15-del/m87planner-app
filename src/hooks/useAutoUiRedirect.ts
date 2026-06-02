@@ -32,7 +32,7 @@ function mapDesktopPathToMobile(pathname: string): string {
   if (pathname === "/settings") return "/m/settings";
   if (pathname.startsWith("/focus")) return "/m/focus/setup";
   if (pathname === "/simulate") return "/m/consequences";
-  if (pathname === "/pricing") return "/m/dashboard";
+  if (pathname === "/pricing") return "/m/pricing";
   return "/m/dashboard";
 }
 

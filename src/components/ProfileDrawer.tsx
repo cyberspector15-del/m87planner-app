@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuickStats } from "@/hooks/useQuickStats";
@@ -16,6 +16,7 @@ interface ProfileDrawerProps {
 
 export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const { vibrate } = useHaptic();
@@ -38,6 +39,7 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
   // Fetch streak from useQuickStats hook
   const { data: quickStats } = useQuickStats();
   const streak = quickStats?.streak ?? 0;
+  const settingsPath = location.pathname.startsWith("/m") ? "/m/settings" : "/settings";
 
   // Fetch completed tasks count
   const { data: completedMissionsCount } = useQuery({
@@ -364,7 +366,7 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
                 onClick={() => {
                   vibrate("light");
                   onClose();
-                  navigate("/settings");
+                  navigate(settingsPath);
                 }}
                 className="w-full h-11 px-2 rounded-[6px] flex items-center gap-3 hover:bg-[#1A1A1A] transition-colors duration-200 text-left focus:outline-none"
               >
