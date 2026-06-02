@@ -173,15 +173,15 @@ const MobileDashboard = () => {
           </div>
         </header>
 
-        <div className="glass rounded-2xl p-3">
+        <div className="relative z-20 rounded-2xl border border-border/60 bg-background p-3 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
           <div className="aspect-video overflow-hidden rounded-xl">
             <div className="h-full overflow-y-auto overflow-x-hidden">
-              <CommandCenter compact />
+              <CommandCenter compact hideShortcutHint className="min-h-[240px]" />
             </div>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="relative z-10 space-y-2">
           <QuickStats />
 
           {/* Flux (match desktop card behavior + modal) */}

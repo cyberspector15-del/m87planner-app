@@ -72,6 +72,8 @@ const placeholders = [
 interface CommandCenterProps {
   className?: string;
   compact?: boolean;
+  mobileFloating?: boolean;
+  hideShortcutHint?: boolean;
 }
 
 const HISTORY_KEY = "m87-command-history";
@@ -87,7 +89,12 @@ interface ConversationMessage {
   content: string;
 }
 
-const CommandCenter = ({ className, compact = false }: CommandCenterProps) => {
+const CommandCenter = ({
+  className,
+  compact = false,
+  mobileFloating = false,
+  hideShortcutHint = false,
+}: CommandCenterProps) => {
   const { isActive } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const { canAfford, spendFlux, balance } = useFlux();
@@ -547,6 +554,24 @@ const CommandCenter = ({ className, compact = false }: CommandCenterProps) => {
     vibrate("light");
   };
 
+  const floatingMode = mobileFloating && isSpotlightActive;
+  const shellClass = floatingMode
+    ? "fixed inset-x-3 top-20 z-50 mx-auto max-w-none"
+    : isSpotlightActive
+      ? "fixed inset-x-4 top-1/4 z-50 max-w-2xl mx-auto"
+      : "relative";
+  const panelClass = floatingMode
+    ? compact
+      ? "bg-background border border-border/70 p-4"
+      : "bg-background border border-border/70 p-6"
+    : isSpotlightActive
+      ? compact
+        ? "glass-strong p-4"
+        : "glass-strong p-6"
+      : compact
+        ? "glass p-3"
+        : "glass p-5";
+
   const isMac = typeof navigator !== "undefined" && navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shortcutKey = isMac ? "⌘K" : "Ctrl+K";
 
@@ -575,8 +600,8 @@ const CommandCenter = ({ className, compact = false }: CommandCenterProps) => {
       <div
         ref={containerRef}
         className={cn(
-          "relative transition-all duration-300",
-          isSpotlightActive && "fixed inset-x-4 top-1/4 z-50 max-w-2xl mx-auto",
+          "transition-all duration-300",
+          shellClass,
           className
         )}
       >
@@ -584,18 +609,14 @@ const CommandCenter = ({ className, compact = false }: CommandCenterProps) => {
           layout
           className={cn(
             "relative overflow-hidden rounded-2xl transition-all duration-300",
-            isSpotlightActive 
-              ? compact
-                ? "glass-strong p-4"
-                : "glass-strong p-6"
-              : compact
-                ? "glass p-3"
-                : "glass p-5"
+            panelClass
           )}
           style={{
-            boxShadow: isSpotlightActive
-              ? "0 0 60px 10px hsl(var(--cosmic-silver) / 0.15), 0 0 100px 30px hsl(var(--cosmic-accent-teal) / 0.08), inset 0 1px 0 0 hsl(var(--cosmic-silver) / 0.1)"
-              : "0 0 30px 5px hsl(var(--cosmic-silver) / 0.05)"
+            boxShadow: floatingMode
+              ? "0 24px 80px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.08)"
+              : isSpotlightActive
+                ? "0 0 60px 10px hsl(var(--cosmic-silver) / 0.15), 0 0 100px 30px hsl(var(--cosmic-accent-teal) / 0.08), inset 0 1px 0 0 hsl(var(--cosmic-silver) / 0.1)"
+                : "0 0 30px 5px hsl(var(--cosmic-silver) / 0.05)"
           }}
         >
           {/* Ambient glow effect */}
@@ -654,14 +675,15 @@ const CommandCenter = ({ className, compact = false }: CommandCenterProps) => {
                 )}
               </div>
               
-              {/* Keyboard shortcut hint */}
-              <motion.div 
-                className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/40 border border-border/30"
-                whileHover={{ scale: 1.02 }}
-              >
-                <Command size={12} weight="thin" className="text-muted-foreground" />
-                <span className="text-xs text-muted-foreground font-mono">{shortcutKey}</span>
-              </motion.div>
+              {!hideShortcutHint && (
+                <motion.div
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/40 border border-border/30"
+                  whileHover={{ scale: 1.02 }}
+                >
+                  <Command size={12} weight="thin" className="text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-mono">{shortcutKey}</span>
+                </motion.div>
+              )}
             </div>
 
             {/* AI Usage & Conversation Mode Row */}
