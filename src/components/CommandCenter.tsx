@@ -131,12 +131,18 @@ const CommandCenter = ({
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const conversationScrollRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages are added
   useEffect(() => {
-    if (conversationMode && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (conversationMode && conversationScrollRef.current) {
+      requestAnimationFrame(() => {
+        const scroller = conversationScrollRef.current;
+        if (scroller) {
+          scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+        }
+      });
     }
   }, [conversationHistory, conversationMode]);
 
@@ -552,18 +558,26 @@ const CommandCenter = ({
   const handleFocus = () => {
     setIsSpotlightActive(true);
     vibrate("light");
+    if (conversationMode && conversationScrollRef.current) {
+      requestAnimationFrame(() => {
+        const scroller = conversationScrollRef.current;
+        if (scroller) {
+          scroller.scrollTop = scroller.scrollHeight;
+        }
+      });
+    }
   };
 
   const floatingMode = mobileFloating && isSpotlightActive;
   const shellClass = floatingMode
-    ? "fixed inset-x-3 top-20 z-50 mx-auto max-w-none"
+    ? "fixed inset-x-3 top-[12vh] z-50 mx-auto max-w-md"
     : isSpotlightActive
       ? "fixed inset-x-4 top-1/4 z-50 max-w-2xl mx-auto"
       : "relative";
   const panelClass = floatingMode
     ? compact
-      ? "bg-background border border-border/70 p-4"
-      : "bg-background border border-border/70 p-6"
+      ? "bg-background border border-border/70 p-4 max-h-[44vh] flex flex-col"
+      : "bg-background border border-border/70 p-6 max-h-[44vh] flex flex-col"
     : isSpotlightActive
       ? compact
         ? "glass-strong p-4"
@@ -646,7 +660,7 @@ const CommandCenter = ({
             )}
           </AnimatePresence>
 
-          <div className="relative z-10">
+          <div className={cn("relative z-10", floatingMode && "flex min-h-0 flex-1 flex-col")}>
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -707,9 +721,10 @@ const CommandCenter = ({
             {/* Conversation UI (if in conversation mode) */}
             {conversationMode && (
               <div 
-                className="mb-3 scroll-smooth"
+                ref={conversationScrollRef}
+                className={cn("mb-3 scroll-smooth", floatingMode && "min-h-0 flex-1")}
                 style={{
-                  maxHeight: '320px',
+                  maxHeight: floatingMode ? 'none' : '320px',
                   overflowY: 'auto',
                   display: 'flex',
                   flexDirection: 'column',
@@ -799,7 +814,7 @@ const CommandCenter = ({
             {/* Conversation thread removed (old pending question display) */}
 
             {/* Input Field Area */}
-            <div className="relative">
+            <div className={cn("relative", floatingMode && "flex-none")}>
               {/* History indicator */}
               <AnimatePresence>
                 {historyIndex >= 0 && commandHistory.length > 0 && (
@@ -983,7 +998,7 @@ const CommandCenter = ({
 
             {/* Spotlight mode helper text */}
             <AnimatePresence>
-              {isSpotlightActive && (
+              {isSpotlightActive && !floatingMode && (
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}

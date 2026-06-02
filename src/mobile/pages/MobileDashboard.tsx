@@ -176,7 +176,7 @@ const MobileDashboard = () => {
         <div className="relative z-20 rounded-2xl border border-border/60 bg-background p-3 shadow-[0_12px_40px_rgba(0,0,0,0.35)]">
           <div className="aspect-video overflow-hidden rounded-xl">
             <div className="h-full overflow-y-auto overflow-x-hidden">
-              <CommandCenter compact hideShortcutHint className="min-h-[240px]" />
+              <CommandCenter compact mobileFloating hideShortcutHint className="min-h-[240px]" />
             </div>
           </div>
         </div>
