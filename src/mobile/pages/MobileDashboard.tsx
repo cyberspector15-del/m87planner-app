@@ -5,11 +5,14 @@ import QuickStats from "@/components/QuickStats";
 import DateSelector from "@/components/DateSelector";
 import Timeline from "@/components/Timeline";
 import AutoPlanButton from "@/components/AutoPlanButton";
+import EventDialog from "@/components/EventDialog";
 import { useEvents } from "@/hooks/useEvents";
+import { useSubscription } from "@/hooks/useSubscription";
+import UpgradeModal from "@/components/UpgradeModal";
 import CosmicBackground from "@/components/CosmicBackground";
 import { useFlux } from "@/hooks/useFlux";
 import FluxHistoryModal from "@/components/FluxHistoryModal";
-import { Mail, Zap } from "lucide-react";
+import { Mail, Plus, Zap } from "lucide-react";
 import { Bell, GearSix, SignOut } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import logoIcon from "@/assets/logo-icon.jpg";
@@ -34,8 +37,10 @@ const MobileDashboard = () => {
   const { toast } = useToast();
   const { vibrate } = useHaptic();
   const { setMailOpen, mailUnread } = useMail();
+  const { isActive } = useSubscription();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const { data: events } = useEvents(selectedDate);
@@ -225,11 +230,33 @@ const MobileDashboard = () => {
         </div>
 
         <div className="glass rounded-xl p-4">
-          <div className="mb-3">
-            <h2 className="font-display font-semibold text-foreground">{dateLabel}</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {eventCount} event{eventCount !== 1 ? "s" : ""}
-            </p>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h2 className="font-display font-semibold text-foreground">{dateLabel}</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {eventCount} event{eventCount !== 1 ? "s" : ""}
+              </p>
+            </div>
+            <EventDialog
+              selectedDate={selectedDate}
+              trigger={
+                <Button
+                  variant="cosmic-outline"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  onClick={(event) => {
+                    if (!isActive) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setShowUpgradeModal(true);
+                    }
+                  }}
+                >
+                  <Plus size={14} />
+                  Add
+                </Button>
+              }
+            />
           </div>
           <Timeline selectedDate={selectedDate} />
         </div>
@@ -238,6 +265,14 @@ const MobileDashboard = () => {
       <FluxHistoryModal
         isOpen={showFluxModal}
         onClose={() => setShowFluxModal(false)}
+      />
+
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        type="tier"
+        featureName="Add Event"
+        requiredTier="event_horizon"
       />
 
       <ProfileDrawer open={profileOpen} onClose={() => setProfileOpen(false)} />

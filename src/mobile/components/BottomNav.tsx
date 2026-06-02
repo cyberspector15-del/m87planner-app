@@ -9,13 +9,13 @@ const BottomNav = () => {
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto grid w-full max-w-md grid-cols-6 gap-2 px-3 py-2">
         <NavLink
-          to="/m/dashboard"
+          to="/m/today"
           className={({ isActive }) =>
             `${linkBase} ${isActive ? "bg-muted text-foreground" : "text-muted-foreground"}`
           }
         >
           <Home className="h-5 w-5" />
-          Dashboard
+          Today
         </NavLink>
         <NavLink
           to="/m/tasks"

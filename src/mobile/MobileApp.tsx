@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import MobileLayout from "./components/MobileLayout";
-import MobileDashboard from "./pages/MobileDashboard";
+import MobileToday from "./pages/MobileToday";
 import MobileTasks from "./pages/MobileTasks";
 import MobileSettings from "./pages/MobileSettings";
 import MobileFocus from "./pages/MobileFocus";
@@ -13,8 +13,9 @@ const MobileApp = () => {
   return (
     <MobileLayout>
       <Routes>
-        <Route path="/" element={<Navigate to="dashboard" replace />} />
-        <Route path="/dashboard" element={<MobileDashboard />} />
+        <Route path="/" element={<Navigate to="today" replace />} />
+        <Route path="/today" element={<MobileToday />} />
+        <Route path="/dashboard" element={<MobileToday />} />
         <Route path="/tasks" element={<MobileTasks />} />
         <Route path="/focus/*" element={<MobileFocus />} />
         <Route path="/routines" element={<MobileRoutines />} />
@@ -22,7 +23,7 @@ const MobileApp = () => {
         <Route path="/analytics" element={<MobileAnalytics />} />
         <Route path="/pricing" element={<MobilePricing />} />
         <Route path="/settings" element={<MobileSettings />} />
-        <Route path="*" element={<Navigate to="dashboard" replace />} />
+        <Route path="*" element={<Navigate to="today" replace />} />
       </Routes>
     </MobileLayout>
   );
