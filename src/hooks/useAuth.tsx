@@ -32,10 +32,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Then listen for future auth changes (sign in, sign out, token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
         if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
+
+        // Apply stored referral code exactly once on a fresh sign-in.
+        // We check for SIGNED_IN so this runs for both email signup and Google OAuth.
+        if (event === 'SIGNED_IN' && session?.user) {
+          const storedCode = localStorage.getItem('m87_referral_code');
+          if (storedCode) {
+            try {
+              await supabase.rpc('apply_referral_code', { ref_code: storedCode } as any);
+            } catch (err) {
+              // Silent fail — never block signup on referral errors
+              console.warn('[referral] apply failed silently:', err);
+            } finally {
+              // Always clear after the first attempt — don't reapply on future logins
+              localStorage.removeItem('m87_referral_code');
+            }
+          }
+        }
       }
     );
 

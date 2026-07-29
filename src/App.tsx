@@ -17,6 +17,7 @@ import FocusSetup from "./pages/FocusSetup";
 import FocusSession from "./pages/FocusSession";
 import PricingPage from "./pages/PricingPage";
 import PaymentSuccess from "./pages/PaymentSuccess";
+import JoinPage from "./pages/JoinPage";
 import { useAirMode } from "@/features/air-mode/AirModeProvider";
 import MobileApp from "./mobile/MobileApp";
 import { useAutoUiRedirect } from "@/hooks/useAutoUiRedirect";
@@ -60,6 +61,7 @@ const DesktopRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/join" element={<JoinPage />} />
       <Route path="/auth" element={<Auth />} />
       <Route
         path="/dashboard"

@@ -7,7 +7,8 @@ import { useQuickStats } from "@/hooks/useQuickStats";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useHaptic } from "@/hooks/useHaptic";
-import { Copy, Check, Settings, LogOut, Loader2, Lock } from "lucide-react";
+import { Settings, LogOut, Loader2, Lock, Circle } from "lucide-react";
+import OMVDrawer from "./OMVDrawer";
 
 interface ProfileDrawerProps {
   open: boolean;
@@ -22,8 +23,8 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
   const { vibrate } = useHaptic();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const [copied, setCopied] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [omvDrawerOpen, setOmvDrawerOpen] = useState(false);
 
   // Close drawer on ESC key
   useEffect(() => {
@@ -61,6 +62,26 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
     enabled: !!user,
   });
 
+  // Fetch OMV balance
+  const { data: omvBalance } = useQuery({
+    queryKey: ["omv-balance", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("omv_balance")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (error) {
+        console.error("Error fetching OMV balance:", error);
+        return 0;
+      }
+      return data?.omv_balance || 0;
+    },
+    enabled: !!user,
+  });
+
   // Derived user details
   const fullName = user?.user_metadata?.full_name || "Explorer";
   const userInitial = (user?.user_metadata?.full_name || user?.email || "E")
@@ -83,25 +104,7 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
     }
   };
 
-  // Referral code logic
-  const referralCode = user?.id
-    ? `M87-${user.id.slice(0, 8).toUpperCase()}`
-    : "M87-EXPLORER";
 
-  const handleCopyCode = async () => {
-    try {
-      vibrate("light");
-      await navigator.clipboard.writeText(referralCode);
-      setCopied(true);
-      toast({
-        title: "Copied code",
-        description: "Referral code copied to clipboard.",
-      });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy code to clipboard:", err);
-    }
-  };
 
   // Avatar photo upload logic
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,12 +193,18 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
       locked: false,
     },
     {
-      label: "OMV BALANCE",
-      value: "0",
+      label: "OMV",
+      icon: <Circle size={10} className="text-[#E8AB30] mr-1.5 inline-block" />,
+      value: (omvBalance ?? 0).toString(),
       sub: "tokens earned",
       subColor: "text-[#999999]",
       valColor: "text-[#E8AB30]",
-      locked: true,
+      valFont: "sim-font-mono",
+      locked: false,
+      onClick: () => {
+        console.log("open omv drawer");
+        setOmvDrawerOpen(true);
+      },
     },
     {
       label: "MISSIONS",
@@ -222,6 +231,7 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
   };
 
   return (
+    <>
     <AnimatePresence>
       {open && (
         <>
@@ -306,12 +316,17 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
                     initial="hidden"
                     animate="visible"
                     variants={cardVariants}
-                    className="relative bg-[#1A1A1A] border border-[#292929] rounded-lg p-[14px] px-[16px] flex flex-col overflow-hidden"
+                    onClick={stat.onClick}
+                    whileTap={stat.onClick ? { scale: 0.98 } : undefined}
+                    className={`relative bg-[#1A1A1A] border border-[#292929] rounded-lg p-[14px] px-[16px] flex flex-col overflow-hidden ${
+                      stat.onClick ? "cursor-pointer hover:border-[#444]" : ""
+                    }`}
                   >
-                    <span className={`sim-font-mono text-[9px] text-[#666666] tracking-[0.12em] uppercase select-none relative z-0`}>
+                    <span className={`sim-font-mono text-[9px] text-[#666666] tracking-[0.12em] uppercase select-none relative z-0 flex items-center`}>
+                      {stat.icon && stat.icon}
                       {stat.label}
                     </span>
-                    <span className={`font-display font-bold text-[24px] mt-1 leading-none ${stat.valColor} relative z-0`}>
+                    <span className={`${stat.valFont || "font-display"} font-bold text-[24px] mt-1 leading-none ${stat.valColor} relative z-0`}>
                       {stat.value}
                     </span>
                     <span className={`font-sans text-[12px] mt-1 font-normal ${stat.subColor} leading-none select-none relative z-0`}>
@@ -330,32 +345,7 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
               </div>
             </div>
 
-            {/* SECTION 3: Referral Block */}
-            <div className="p-5 px-6 border-b border-[#1A1A1A] flex flex-col">
-              <span className="sim-font-mono text-[9px] text-[#666666] tracking-[0.12em] uppercase mb-2 select-none">
-                REFERRAL CODE
-              </span>
-              <div className="relative bg-[#1A1A1A] border border-[#292929] rounded-[6px] p-3 px-4 flex items-center justify-between overflow-hidden">
-                <span className="sim-font-mono text-[13px] text-[#BFBFBF] select-none font-medium">
-                  {referralCode}
-                </span>
-                <button
-                  disabled
-                  className="focus:outline-none p-1 -m-1 cursor-default"
-                >
-                  <Copy size={14} className="text-[#666666]" />
-                </button>
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-[6px] border border-white/10 bg-black/40 backdrop-blur-[4px]">
-                  <Lock size={14} className="text-white/80" />
-                  <span className="font-sans text-[9px] mt-0.5 font-medium text-white/80 tracking-widest uppercase">
-                    Available soon
-                  </span>
-                </div>
-              </div>
-              <span className="font-sans text-[12px] text-[#666666] mt-2 select-none font-normal">
-                Invite explorers. Earn OMV when they join.
-              </span>
-            </div>
+
 
             {/* Spacer to push links to the bottom */}
             <div className="flex-grow" />
@@ -389,5 +379,7 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
         </>
       )}
     </AnimatePresence>
+    <OMVDrawer isOpen={omvDrawerOpen} onClose={() => setOmvDrawerOpen(false)} />
+    </>
   );
 }

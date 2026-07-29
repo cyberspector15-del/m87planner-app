@@ -129,7 +129,10 @@ export type Database = {
           id: string
           name: string | null
           notifications_enabled: boolean | null
+          omv_balance: number | null
           planning_mode: string | null
+          referral_code: string | null
+          referred_by: string | null
           reminder_minutes: number | null
           show_ai_explanations: boolean | null
           sound_enabled: boolean | null
@@ -156,7 +159,10 @@ export type Database = {
           id?: string
           name?: string | null
           notifications_enabled?: boolean | null
+          omv_balance?: number | null
           planning_mode?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           reminder_minutes?: number | null
           show_ai_explanations?: boolean | null
           sound_enabled?: boolean | null
@@ -183,7 +189,10 @@ export type Database = {
           id?: string
           name?: string | null
           notifications_enabled?: boolean | null
+          omv_balance?: number | null
           planning_mode?: string | null
+          referral_code?: string | null
+          referred_by?: string | null
           reminder_minutes?: number | null
           show_ai_explanations?: boolean | null
           sound_enabled?: boolean | null
