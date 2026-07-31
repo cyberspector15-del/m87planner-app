@@ -324,6 +324,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_task_and_award_omv: {
+        Args: { p_completed: boolean; p_task_id: string }
+        Returns: Database["public"]["Tables"]["tasks"]["Row"]
+      }
       get_ai_usage_status: { Args: { p_user_id: string }; Returns: Json }
       increment_ai_usage: { Args: { p_user_id: string }; Returns: Json }
     }
