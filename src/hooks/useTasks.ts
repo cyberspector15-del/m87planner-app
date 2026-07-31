@@ -120,17 +120,18 @@ export const useToggleTaskComplete = () => {
   return useMutation({
     mutationFn: async ({ id, completed }: { id: string; completed: boolean }) => {
       const { data, error } = await supabase
-        .from('tasks')
-        .update({ completed })
-        .eq('id', id)
-        .select()
-        .single();
+        .rpc('complete_task_and_award_omv', {
+          p_task_id: id,
+          p_completed: completed,
+        });
 
       if (error) throw error;
       return data as Task;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['omv-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['omv-transactions'] });
       toast({
         title: data.completed ? 'Task completed' : 'Task reopened',
         description: data.completed ? 'Great job!' : 'Task marked as incomplete.',
