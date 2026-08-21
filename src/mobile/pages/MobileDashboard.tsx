@@ -19,6 +19,7 @@ import logoIcon from "@/assets/logo-icon.jpg";
 import { useMail } from "@/contexts/MailContext";
 import { useHaptic } from "@/hooks/useHaptic";
 import { useToast } from "@/hooks/use-toast";
+import { useDailyCheckin } from "@/hooks/useDailyCheckin";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import {
@@ -32,6 +33,7 @@ import { NotificationSettings } from "@/components/NotificationSettings";
 import ProfileDrawer from "@/components/ProfileDrawer";
 
 const MobileDashboard = () => {
+  useDailyCheckin();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { toast } = useToast();

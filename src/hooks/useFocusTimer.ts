@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { FocusSession } from '@/types/focusMode';
 import { SESSION_STORAGE_KEY } from './useFocusSession';
+import { useFocusSessionAward } from './useFocusSessionAward';
 
 interface UseFocusTimerReturn {
   session: FocusSession | null;
@@ -12,6 +13,7 @@ interface UseFocusTimerReturn {
 }
 
 export const useFocusTimer = (): UseFocusTimerReturn => {
+  const { awardFocusSession } = useFocusSessionAward();
   const [session, setSession] = useState<FocusSession | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [phase, setPhase] = useState<'loading' | 'focus' | 'break' | 'complete'>('loading');
@@ -118,7 +120,11 @@ export const useFocusTimer = (): UseFocusTimerReturn => {
                   focus_minutes_completed: session.focusDuration,
                 })
                 .eq('id', sessionId)
-                .then(() => {
+                .then(({ error }) => {
+                  if (error) {
+                    console.error('Could not transition focus session to break:', error);
+                    return;
+                  }
                   setSecondsLeft(session.breakDuration * 60);
                   setPhase('break');
                 });
@@ -132,7 +138,12 @@ export const useFocusTimer = (): UseFocusTimerReturn => {
                   completed_at: now,
                 })
                 .eq('id', sessionId)
-                .then(() => {
+                .then(async ({ error }) => {
+                  if (error) {
+                    console.error('Could not complete focus session:', error);
+                    return;
+                  }
+                  await awardFocusSession(sessionId);
                   setPhase('complete');
                 });
             }
@@ -147,7 +158,7 @@ export const useFocusTimer = (): UseFocusTimerReturn => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [phase, session]);
+  }, [awardFocusSession, phase, session]);
 
   // Calculate progress percentage
   let progressPct = 0;
@@ -165,4 +176,3 @@ export const useFocusTimer = (): UseFocusTimerReturn => {
 
   return { session, secondsLeft, progressPct, phase, focusElapsedSecondsRef };
 };
-

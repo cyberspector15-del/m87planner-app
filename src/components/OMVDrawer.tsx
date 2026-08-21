@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { X, Trophy, Target, Medal, ChevronDown, ChevronUp, Copy } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +15,12 @@ interface OMVTransaction {
 }
 
 const REASON_LABELS: Record<string, string> = {
+  daily_checkin: 'Daily Check-in',
+  streak_7: '7-Day Streak',
+  streak_30: '30-Day Streak',
+  focus_mode: 'Focus Session',
+  referral_join: 'Referral Bonus',
+  referral_commission: 'Referral Commission',
   streak_milestone: 'Streak Milestone',
   mission_complete: 'Mission Completed',
   referral_signup: 'Referral Sign-up',
@@ -43,6 +49,23 @@ export default function OMVDrawer({ isOpen, onClose }: OMVDrawerProps) {
   const { toast } = useToast();
   const [howToEarnExpanded, setHowToEarnExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
+  const drawerScrollRef = useRef<HTMLDivElement>(null);
+  const dragControls = useDragControls();
+
+  // Keep wheel/touch scrolling on the drawer while it is open.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousDocumentOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousDocumentOverflow;
+    };
+  }, [isOpen]);
 
   // Fetch the current user's real referral_code and profile id from DB
   const { data: myProfile } = useQuery({
@@ -147,6 +170,7 @@ export default function OMVDrawer({ isOpen, onClose }: OMVDrawerProps) {
   });
 
   const handleDragEnd = (e: any, info: any) => {
+    if (drawerScrollRef.current && drawerScrollRef.current.scrollTop > 0) return;
     if (info.offset.y > 100 || info.velocity.y > 500) {
       onClose();
     }
@@ -170,23 +194,34 @@ export default function OMVDrawer({ isOpen, onClose }: OMVDrawerProps) {
         >
           <motion.div
             className="w-full max-w-[480px] bg-[#0A0A0A] border-t border-[#333333] rounded-t-[24px] flex flex-col"
-            style={{
-              padding: '24px',
-              paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
-              boxShadow: '0 -4px 24px -4px rgba(0,0,0,0.8)',
-            }}
             variants={drawerVariants}
             initial="hidden"
             animate="visible"
             exit="exit"
+            ref={drawerScrollRef}
             drag="y"
+            dragListener={false}
+            dragControls={dragControls}
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={{ top: 0, bottom: 1 }}
             onDragEnd={handleDragEnd}
+            style={{
+              maxHeight: '100dvh',
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              touchAction: 'pan-y',
+              overscrollBehavior: 'contain',
+              padding: '24px',
+              paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+              boxShadow: '0 -4px 24px -4px rgba(0,0,0,0.8)',
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* ── Drag Handle & Header ── */}
-            <div className="w-12 h-1.5 bg-[#333333] rounded-full mx-auto mb-6 cursor-grab active:cursor-grabbing" />
+            <div
+              className="w-12 h-1.5 bg-[#333333] rounded-full mx-auto mb-6 cursor-grab active:cursor-grabbing"
+              onPointerDown={(event) => dragControls.start(event)}
+            />
             
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '8px', marginTop: '-32px' }}>
               <button

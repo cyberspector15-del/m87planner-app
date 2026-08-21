@@ -20,8 +20,10 @@ import { Plus } from "@phosphor-icons/react";
 import { Zap } from "lucide-react";
 import { useFlux } from "../hooks/useFlux";
 import FluxHistoryModal from "@/components/FluxHistoryModal";
+import { useDailyCheckin } from "@/hooks/useDailyCheckin";
 
 const Index = () => {
+  useDailyCheckin();
   const navigate = useNavigate();
   const { isActive } = useSubscription();
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);

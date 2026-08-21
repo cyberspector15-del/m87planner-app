@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuickStats } from "@/hooks/useQuickStats";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useHaptic } from "@/hooks/useHaptic";
@@ -37,9 +36,25 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [open, onClose]);
 
-  // Fetch streak from useQuickStats hook
-  const { data: quickStats } = useQuickStats();
-  const streak = quickStats?.streak ?? 0;
+  // `profiles.current_streak` is the server-authoritative streak value.
+  const { data: currentStreak = 0 } = useQuery({
+    queryKey: ["profile-streak", user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("current_streak")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching current streak:", error);
+        return 0;
+      }
+      return data?.current_streak ?? 0;
+    },
+    enabled: !!user,
+  });
   const settingsPath = location.pathname.startsWith("/m") ? "/m/settings" : "/settings";
 
   // Fetch completed tasks count
@@ -178,7 +193,7 @@ export default function ProfileDrawer({ open, onClose }: ProfileDrawerProps) {
   const statsList = [
     {
       label: "CURRENT STREAK",
-      value: streak.toString(),
+      value: currentStreak.toString(),
       sub: "days active",
       subColor: "text-[#45A199]",
       valColor: "text-white",

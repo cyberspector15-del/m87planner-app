@@ -122,6 +122,7 @@ export type Database = {
           commute_tolerance_minutes: number | null
           conversation_mode_enabled: boolean | null
           created_at: string
+          current_streak: number | null
           email: string | null
           focus_hours_end: string | null
           focus_hours_start: string | null
@@ -152,6 +153,7 @@ export type Database = {
           commute_tolerance_minutes?: number | null
           conversation_mode_enabled?: boolean | null
           created_at?: string
+          current_streak?: number | null
           email?: string | null
           focus_hours_end?: string | null
           focus_hours_start?: string | null
@@ -182,6 +184,7 @@ export type Database = {
           commute_tolerance_minutes?: number | null
           conversation_mode_enabled?: boolean | null
           created_at?: string
+          current_streak?: number | null
           email?: string | null
           focus_hours_end?: string | null
           focus_hours_start?: string | null
@@ -324,6 +327,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_daily_checkin: { Args: Record<PropertyKey, never>; Returns: number }
+      award_focus_session: {
+        Args: { p_session_id: string }
+        Returns: number
+      }
       complete_task_and_award_omv: {
         Args: { p_completed: boolean; p_task_id: string }
         Returns: Database["public"]["Tables"]["tasks"]["Row"]

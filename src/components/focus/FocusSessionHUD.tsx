@@ -12,6 +12,7 @@ import { BreakActivityPanel } from './BreakActivityPanel';
 import { BreakActivity, BreakTier } from '@/types/focusMode';
 import { useSoftLock } from '@/hooks/useSoftLock';
 import { ExitFrictionModal } from './ExitFrictionModal';
+import { useFocusSessionAward } from '@/hooks/useFocusSessionAward';
 
 // ── helpers ─────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ const hudLabel = (tier: BreakTier, activity: string | null): string => {
 
 export const FocusSessionHUD = () => {
   const { session, secondsLeft, progressPct, phase, focusElapsedSecondsRef } = useFocusTimer();
+  const { awardFocusSession } = useFocusSessionAward();
   const navigate = useNavigate();
   const { showExitModal, requestLock, exitLock, dismissModal } = useSoftLock();
 
@@ -58,7 +60,7 @@ export const FocusSessionHUD = () => {
     const seconds = focusElapsedSecondsRef.current;
     const focusMinutesCompleted = seconds > 0 ? Math.max(1, Math.round(seconds / 60)) : 0;
     
-    await supabase
+    const { error } = await supabase
       .from('focus_sessions')
       .update({
         exited_early: true,
@@ -67,6 +69,12 @@ export const FocusSessionHUD = () => {
         phase: 'complete',
       })
       .eq('id', session.id);
+
+    if (error) {
+      console.error('Could not complete focus session:', error);
+    } else {
+      await awardFocusSession(session.id);
+    }
 
     await exitLock();
     navigate('/dashboard');
@@ -368,4 +376,3 @@ export const FocusSessionHUD = () => {
     </motion.div>
   );
 };
-
